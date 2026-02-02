@@ -82,6 +82,10 @@ export async function POST(request: Request) {
     });
 
     if (!usage.allowed) {
+      const limitLabel =
+        usage.scope === "org"
+          ? `org quota (${usage.org.count}/${usage.org.limit})`
+          : `your quota (${usage.user.count}/${usage.user.limit})`;
       return NextResponse.json({
         status: "FAIL",
         findings: [
@@ -89,7 +93,7 @@ export async function POST(request: Request) {
             path: "package.json",
             severity: "minor",
             title: "Daily review limit reached",
-            message: `You have reached your daily Shipstamp review limit for ${usage.day} (${usage.count}/${usage.limit}).`
+            message: `You have reached your daily Shipstamp review limit for ${usage.day} (${limitLabel}).`
           }
         ]
       });

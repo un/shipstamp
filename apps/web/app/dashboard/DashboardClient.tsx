@@ -23,6 +23,10 @@ export function DashboardClient() {
     api.usage.getMyDailyUsage,
     selectedOrgId ? { orgId: selectedOrgId as any, day } : "skip"
   );
+  const orgUsage = useQuery(
+    api.usage.getOrgDailyUsage,
+    selectedOrgId ? { orgId: selectedOrgId as any, day } : "skip"
+  );
   const modelStats = useQuery(
     api.stats.listModelStatsForOrgDay,
     selectedOrgId ? { orgId: selectedOrgId as any, day } : "skip"
@@ -200,11 +204,16 @@ export function DashboardClient() {
             <CardDescription>{day} (UTC)</CardDescription>
           </CardHeader>
           <CardContent>
-            {myUsage === undefined ? (
+            {myUsage === undefined || orgUsage === undefined ? (
               <div className="text-sm text-muted-foreground">Loading usage...</div>
             ) : (
-              <div className="text-sm">
-                <span className="text-muted-foreground">Reviews:</span> {myUsage.count}
+              <div className="flex flex-col gap-1 text-sm">
+                <div>
+                  <span className="text-muted-foreground">You:</span> {myUsage.count}/{myUsage.limit} ({myUsage.remaining} left)
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Org:</span> {orgUsage.count}/{orgUsage.limit} ({orgUsage.remaining} left)
+                </div>
               </div>
             )}
           </CardContent>
