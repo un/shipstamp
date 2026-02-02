@@ -36,10 +36,7 @@ export function ensureHuskyHookAppends(repoRoot: string, hookName: string, ships
   }
 
   const before = normalizeNewline(readFileSync(hookPath, "utf8"));
-  if (before.includes(shipstampLine) || before.includes(marker)) {
-    // already present (or manually integrated)
-    return;
-  }
+  if (before.includes(shipstampLine)) return;
 
   const next = before.replace(/\s*$/, "\n\n") + `${marker}\n${shipstampLine}\n`;
   writeFileSync(hookPath, next, "utf8");
