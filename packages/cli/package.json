@@ -13,7 +13,8 @@
     "zod": "^3.24.2"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format cjs --dts --sourcemap --clean",
+    "build": "tsup src/index.ts --format cjs --dts --sourcemap --clean --define.__SHIPSTAMP_OFFICIAL_BUILD__=false",
+    "build:official": "tsup src/index.ts --format cjs --dts --sourcemap --clean --define.__SHIPSTAMP_OFFICIAL_BUILD__=true",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }
