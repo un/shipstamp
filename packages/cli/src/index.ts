@@ -3,6 +3,7 @@ import { parseArgs } from "node:util";
 import { getBranchName, getHeadSha, getRepoRoot } from "./git";
 import { loadShipstampRepoConfig } from "./repoConfig";
 import { collectStagedFiles } from "./staged";
+import { collectStagedPatch } from "./stagedPatch";
 
 function printHelp() {
   process.stdout.write(
@@ -79,6 +80,7 @@ function cmdReview(argv: string[]) {
 
   // v0 scaffold: start collecting staged metadata.
   void collectStagedFiles(repoRoot);
+  void collectStagedPatch(repoRoot);
 
   // v0 scaffold: real staged diff collection lands in later steps.
   const md = formatReviewResultMarkdown({ status: "PASS", findings: [] });
