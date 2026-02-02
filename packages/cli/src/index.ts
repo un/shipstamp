@@ -1,6 +1,6 @@
 import { formatReviewResultMarkdown, SHIPSTAMP_CORE_VERSION } from "@shipstamp/core";
 import { parseArgs } from "node:util";
-import { getBranchName, getHeadSha, getRepoRoot } from "./git";
+import { getBranchName, getHeadSha, getOriginUrl, getRepoRoot, normalizeOriginUrl } from "./git";
 import { loadShipstampRepoConfig } from "./repoConfig";
 import { collectStagedFiles } from "./staged";
 import { collectStagedPatch } from "./stagedPatch";
@@ -20,6 +20,7 @@ import { deviceAuthLogin } from "./deviceAuth";
 import { loadToken } from "./token";
 import { readTextFile } from "./files";
 import { loadRepoEnv } from "./dotenvFile";
+import { ShipstampApiClient } from "./apiClient";
 
 function printHelp() {
   process.stdout.write(
@@ -135,7 +136,7 @@ async function cmdReview(argv: string[]) {
 
     // v0 scaffold: start collecting staged metadata.
     const stagedFiles = collectStagedFiles(repoRoot);
-    void collectStagedPatch(repoRoot);
+    const stagedPatch = collectStagedPatch(repoRoot);
 
     const changedPaths = stagedFiles
       .filter((f) => f.path && f.changeType !== "deleted")
@@ -184,37 +185,42 @@ async function cmdReview(argv: string[]) {
       }
 
       if (token) {
-        const hashed = hashFilesSha256(repoRoot, discovered.uniqueInstructionFiles);
-        const files = hashed.hashed.map((h) => ({ path: h.path, sha256: h.sha256 }));
+        // Best-effort instruction sync (never blocks review).
+        try {
+          const hashed = hashFilesSha256(repoRoot, discovered.uniqueInstructionFiles);
+          const files = hashed.hashed.map((h) => ({ path: h.path, sha256: h.sha256 }));
 
-        const checkRes = await fetch(`${apiBaseUrl.replace(/\/$/, "")}/api/v1/instructions/check`, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ files })
-        });
+          const checkRes = await fetch(`${apiBaseUrl.replace(/\/$/, "")}/api/v1/instructions/check`, {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ files })
+          });
 
-        if (checkRes.ok) {
-          const payload = (await checkRes.json()) as { missing: Array<{ path: string; sha256: string }> };
-          const missingFiles = payload.missing ?? [];
-          if (missingFiles.length > 0) {
-            const uploadFiles = missingFiles.map((m) => ({
-              path: m.path,
-              sha256: m.sha256,
-              content: readTextFile(repoRoot, m.path)
-            }));
+          if (checkRes.ok) {
+            const payload = (await checkRes.json()) as { missing: Array<{ path: string; sha256: string }> };
+            const missingFiles = payload.missing ?? [];
+            if (missingFiles.length > 0) {
+              const uploadFiles = missingFiles.map((m) => ({
+                path: m.path,
+                sha256: m.sha256,
+                content: readTextFile(repoRoot, m.path)
+              }));
 
-            await fetch(`${apiBaseUrl.replace(/\/$/, "")}/api/v1/instructions/upload`, {
-              method: "POST",
-              headers: {
-                "content-type": "application/json",
-                authorization: `Bearer ${token}`
-              },
-              body: JSON.stringify({ files: uploadFiles })
-            });
+              await fetch(`${apiBaseUrl.replace(/\/$/, "")}/api/v1/instructions/upload`, {
+                method: "POST",
+                headers: {
+                  "content-type": "application/json",
+                  authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ files: uploadFiles })
+              });
+            }
           }
+        } catch {
+          // ignore
         }
       }
     }
@@ -231,6 +237,53 @@ async function cmdReview(argv: string[]) {
             timeoutMs: repoConfig.timeoutMs
           })
         );
+      }
+    }
+
+    // Local blockers (env/auth/linters) should still block before the network call.
+    if (findings.some((f) => f.severity === "minor" || f.severity === "major")) {
+      const md = formatReviewResultMarkdown({ status: "FAIL", findings });
+      process.stdout.write(md);
+      process.stdout.write("\n");
+      return 1;
+    }
+
+    // SaaS review: send staged patch to server.
+    if (apiBaseUrl) {
+      const token = (() => {
+        try {
+          return loadToken();
+        } catch {
+          return null;
+        }
+      })();
+
+      if (token) {
+        const originUrl = getOriginUrl(repoRoot);
+        const normalizedOriginUrl = originUrl ? normalizeOriginUrl(originUrl) : null;
+
+        const apiClient = new ShipstampApiClient({ baseUrl: apiBaseUrl, token, timeoutMs: repoConfig.timeoutMs });
+        const remote = await apiClient.postJson<{ status: "PASS" | "FAIL" | "UNCHECKED"; findings: any[] }>(
+          "/api/v1/review",
+          {
+            originUrl: originUrl ?? undefined,
+            normalizedOriginUrl: normalizedOriginUrl ?? undefined,
+            branch,
+            planTier: "free",
+            stagedPatch,
+            stagedFiles: stagedFiles.map((f) => ({
+              path: f.path,
+              changeType: f.changeType,
+              isBinary: f.isBinary
+            })),
+            instructionFiles: hashFilesSha256(repoRoot, discovered.uniqueInstructionFiles).hashed.map((h) => ({
+              path: h.path,
+              sha256: h.sha256
+            }))
+          }
+        );
+
+        findings = findings.concat(remote.findings as Array<import("@shipstamp/core").Finding>);
       }
     }
 

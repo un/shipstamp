@@ -33,7 +33,8 @@ export default defineSchema({
     createdAtMs: v.number()
   })
     .index("by_orgId", ["orgId"])
-    .index("by_normalizedOriginUrl", ["normalizedOriginUrl"]),
+    .index("by_normalizedOriginUrl", ["normalizedOriginUrl"])
+    .index("by_orgId_normalizedOriginUrl", ["orgId", "normalizedOriginUrl"]),
 
   instructionFiles: defineTable({
     orgId: v.id("orgs"),

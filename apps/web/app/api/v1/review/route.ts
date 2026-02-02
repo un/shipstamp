@@ -13,6 +13,8 @@ function bearerToken(req: Request): string | null {
 }
 
 const ReviewRequestSchema = z.object({
+  originUrl: z.string().min(1).optional(),
+  normalizedOriginUrl: z.string().min(1).optional(),
   branch: z.string().min(1),
   planTier: z.string().min(1),
   stagedPatch: z.string(),
@@ -55,5 +57,31 @@ export async function POST(request: Request) {
   }
 
   const result = await reviewWorkflow(parsed.data);
+
+  // Best-effort persistence (don’t block response on Convex write failures).
+  try {
+    await client.mutation(api.reviews.recordRun, {
+      token,
+      originUrl: parsed.data.originUrl,
+      normalizedOriginUrl: parsed.data.normalizedOriginUrl,
+      branch: parsed.data.branch,
+      status: result.status,
+      planTier: parsed.data.planTier,
+      modelSet: parsed.data.planTier === "paid" ? "openai+anthropic+google" : "openai",
+      findings: result.findings.map((f) => ({
+        path: f.path,
+        severity: f.severity,
+        title: f.title,
+        message: f.message,
+        suggestion: f.suggestion,
+        line: f.line,
+        agreementAgreed: f.agreement?.agreed,
+        agreementTotal: f.agreement?.total
+      }))
+    });
+  } catch {
+    // ignore
+  }
+
   return NextResponse.json(result);
 }
