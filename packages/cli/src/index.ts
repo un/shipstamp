@@ -5,6 +5,7 @@ import { loadShipstampRepoConfig } from "./repoConfig";
 import { collectStagedFiles } from "./staged";
 import { collectStagedPatch } from "./stagedPatch";
 import { discoverInstructionFiles } from "./instructions";
+import { hashFilesSha256 } from "./hash";
 
 function printHelp() {
   process.stdout.write(
@@ -88,7 +89,8 @@ function cmdReview(argv: string[]) {
     .filter((f) => f.path && f.changeType !== "deleted")
     .map((f) => f.path);
 
-  void discoverInstructionFiles(repoRoot, changedPaths, repoConfig.instructionFiles);
+  const discovered = discoverInstructionFiles(repoRoot, changedPaths, repoConfig.instructionFiles);
+  void hashFilesSha256(repoRoot, discovered.uniqueInstructionFiles);
 
   // v0 scaffold: real staged diff collection lands in later steps.
   const md = formatReviewResultMarkdown({ status: "PASS", findings: [] });
