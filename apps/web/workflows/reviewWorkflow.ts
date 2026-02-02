@@ -4,6 +4,7 @@ import { sleep } from "workflow";
 import { defaultFreeTierModel, defaultPaidTierModels, type ModelSpec } from "@/lib/ai/providers";
 import { runText } from "@/lib/ai/runText";
 import { normalizeModelOutputToFindings } from "@/lib/review/normalizeModelOutput";
+import { mergeFindings } from "@/lib/review/mergeFindings";
 
 export type ReviewWorkflowInput = {
   branch: string;
@@ -29,18 +30,18 @@ export async function reviewWorkflow(input: ReviewWorkflowInput): Promise<Review
     "Staged patch:\n" +
     input.stagedPatch;
 
-  const perModel: Array<{ spec: ModelSpec; findings: Finding[] }> = [];
+  const perModel: Array<{ modelName: string; findings: Finding[] }> = [];
 
   for (const spec of specs) {
     // Keep this workflow alive even in local dev with no API keys.
     try {
       const { text } = await runText({ spec, prompt, temperature: 0.2, maxTokens: 1200 });
       const modelName = `${spec.provider}/${spec.model}`;
-      perModel.push({ spec, findings: normalizeModelOutputToFindings(modelName, text) });
+      perModel.push({ modelName, findings: normalizeModelOutputToFindings(modelName, text) });
     } catch {
       // Local/dev without keys: treat as unchecked and allow the API route to decide.
       perModel.push({
-        spec,
+        modelName: `${spec.provider}/${spec.model}`,
         findings: [
           {
             path: "package.json",
@@ -56,8 +57,7 @@ export async function reviewWorkflow(input: ReviewWorkflowInput): Promise<Review
     await sleep(1);
   }
 
-  // Temporary: just return the first model's findings.
-  const findings = perModel.flatMap((r) => r.findings);
+  const findings = mergeFindings(perModel);
   const status: ReviewResult["status"] = findings.some((f) => f.severity !== "note") ? "FAIL" : "PASS";
   return { status, findings };
 }
