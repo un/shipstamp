@@ -20,7 +20,7 @@ import { deviceAuthLogin } from "./deviceAuth";
 import { loadToken } from "./token";
 import { readTextFile } from "./files";
 import { loadRepoEnv } from "./dotenvFile";
-import { ShipstampApiClient } from "./apiClient";
+import { ShipstampApiClient, ShipstampApiError } from "./apiClient";
 
 function printHelp() {
   process.stdout.write(
@@ -263,9 +263,8 @@ async function cmdReview(argv: string[]) {
         const normalizedOriginUrl = originUrl ? normalizeOriginUrl(originUrl) : null;
 
         const apiClient = new ShipstampApiClient({ baseUrl: apiBaseUrl, token, timeoutMs: repoConfig.timeoutMs });
-        const remote = await apiClient.postJson<{ status: "PASS" | "FAIL" | "UNCHECKED"; findings: any[] }>(
-          "/api/v1/review",
-          {
+        try {
+          const remote = await apiClient.postJson<import("@shipstamp/core").ReviewResult>("/api/v1/review", {
             originUrl: originUrl ?? undefined,
             normalizedOriginUrl: normalizedOriginUrl ?? undefined,
             branch,
@@ -280,10 +279,48 @@ async function cmdReview(argv: string[]) {
               path: h.path,
               sha256: h.sha256
             }))
-          }
-        );
+          });
 
-        findings = findings.concat(remote.findings as Array<import("@shipstamp/core").Finding>);
+          if (remote.status === "UNCHECKED") {
+            writePendingNextCommit(repoRoot, {
+              branch,
+              createdAtMs: Date.now(),
+              reason: "server_unchecked"
+            });
+
+            const md = formatReviewResultMarkdown({
+              status: "UNCHECKED",
+              findings:
+                remote.findings.length > 0
+                  ? remote.findings
+                  : [
+                      {
+                        path: "package.json",
+                        severity: "note",
+                        title: "Unchecked review",
+                        message:
+                          "Shipstamp could not complete the review. Commit is allowed, but Shipstamp will require reviewing this commit before the next commit on this branch."
+                      }
+                    ]
+            });
+            process.stdout.write(md);
+            process.stdout.write("\n");
+            return 0;
+          }
+
+          findings = findings.concat(remote.findings);
+        } catch (err) {
+          if (err instanceof ShipstampApiError && err.status === 401) {
+            findings.push({
+              path: "package.json",
+              severity: "minor",
+              title: "Authentication failed",
+              message: "Shipstamp API rejected your token. Run `shipstamp auth login` to re-authenticate."
+            });
+          } else {
+            throw err;
+          }
+        }
       }
     }
 
