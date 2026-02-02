@@ -56,6 +56,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_request", details: parsed.error.flatten() }, { status: 400 });
   }
 
+  if (!parsed.data.originUrl || !parsed.data.normalizedOriginUrl) {
+    return NextResponse.json({
+      status: "FAIL",
+      findings: [
+        {
+          path: "package.json",
+          severity: "minor",
+          title: "Missing repo identity",
+          message: "Shipstamp requires a git remote named 'origin' to identify the repository (remote.origin.url)."
+        }
+      ]
+    });
+  }
+
   // Until billing is implemented, default to free tier unless explicitly enabled.
   const planTier =
     parsed.data.planTier === "paid" && process.env.SHIPSTAMP_ENABLE_PAID_TIER === "1" ? "paid" : "free";

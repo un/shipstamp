@@ -60,8 +60,8 @@ export const recordRun = mutation({
     planTier: v.string(),
     modelSet: v.optional(v.string()),
     durationMs: v.optional(v.number()),
-    originUrl: v.optional(v.string()),
-    normalizedOriginUrl: v.optional(v.string()),
+    originUrl: v.string(),
+    normalizedOriginUrl: v.string(),
     perModel: v.optional(
       v.array(
         v.object({
@@ -77,21 +77,18 @@ export const recordRun = mutation({
     const auth = await verifyApiToken(ctx, args.token);
     if (!auth) throw new Error("unauthorized");
 
-    const normalizedOriginUrl = args.normalizedOriginUrl ?? "unknown";
-    const originUrl = args.originUrl ?? "unknown";
-
     let repo: Doc<"repos"> | null = await ctx.db
       .query("repos")
       .withIndex("by_orgId_normalizedOriginUrl", (q) =>
-        q.eq("orgId", auth.orgId).eq("normalizedOriginUrl", normalizedOriginUrl)
+        q.eq("orgId", auth.orgId).eq("normalizedOriginUrl", args.normalizedOriginUrl)
       )
       .unique();
 
     if (!repo) {
       const repoId = await ctx.db.insert("repos", {
         orgId: auth.orgId,
-        originUrl,
-        normalizedOriginUrl,
+        originUrl: args.originUrl,
+        normalizedOriginUrl: args.normalizedOriginUrl,
         defaultBranch: args.branch,
         createdAtMs: Date.now()
       });

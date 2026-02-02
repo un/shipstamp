@@ -97,3 +97,20 @@ export function normalizeOriginUrl(originUrl: string): string {
     return raw;
   }
 }
+
+export function getDefaultBranchFromOrigin(cwd: string = process.cwd()): string | null {
+  try {
+    const out = execFileSync("git", ["rev-parse", "--abbrev-ref", "origin/HEAD"], {
+      cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+
+    const ref = out.trim();
+    // origin/main -> main
+    const m = ref.match(/^origin\/(.+)$/);
+    return m ? m[1]!.trim() : ref || null;
+  } catch {
+    return null;
+  }
+}

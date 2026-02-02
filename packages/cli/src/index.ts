@@ -1,6 +1,13 @@
 import { formatReviewResultMarkdown, SHIPSTAMP_CORE_VERSION } from "@shipstamp/core";
 import { parseArgs } from "node:util";
-import { getBranchName, getHeadSha, getOriginUrl, getRepoRoot, normalizeOriginUrl } from "./git";
+import {
+  getBranchName,
+  getDefaultBranchFromOrigin,
+  getHeadSha,
+  getOriginUrl,
+  getRepoRoot,
+  normalizeOriginUrl
+} from "./git";
 import { loadShipstampRepoConfig } from "./repoConfig";
 import { collectStagedFiles } from "./staged";
 import { collectStagedPatch } from "./stagedPatch";
@@ -185,6 +192,17 @@ async function cmdReview(argv: string[]) {
       }
 
       if (token) {
+        const originUrl = getOriginUrl(repoRoot);
+        if (!originUrl) {
+          findings.push({
+            path: ".git/config",
+            severity: "minor",
+            title: "Missing git remote origin",
+            message:
+              "Shipstamp identifies repositories by `remote.origin.url`. Configure a remote named `origin` (e.g. `git remote add origin ...`) and try again."
+          });
+        }
+
         // Best-effort instruction sync (never blocks review).
         try {
           const hashed = hashFilesSha256(repoRoot, discovered.uniqueInstructionFiles);
@@ -261,6 +279,21 @@ async function cmdReview(argv: string[]) {
       if (token) {
         const originUrl = getOriginUrl(repoRoot);
         const normalizedOriginUrl = originUrl ? normalizeOriginUrl(originUrl) : null;
+        const defaultBranch = getDefaultBranchFromOrigin(repoRoot);
+
+        if (originUrl && normalizedOriginUrl) {
+          // Best-effort: register the repo (non-blocking).
+          try {
+            const apiClient = new ShipstampApiClient({ baseUrl: apiBaseUrl, token, timeoutMs: repoConfig.timeoutMs });
+            await apiClient.postJson<{ repoId: string }>("/api/v1/repos/register", {
+              originUrl,
+              normalizedOriginUrl,
+              defaultBranch: defaultBranch ?? undefined
+            });
+          } catch {
+            // ignore
+          }
+        }
 
         const apiClient = new ShipstampApiClient({ baseUrl: apiBaseUrl, token, timeoutMs: repoConfig.timeoutMs });
         try {
