@@ -88,9 +88,12 @@ export function writeSkipNext(repoRoot: string, state: SkipNextState) {
 }
 
 export function clearSkipNext(repoRoot: string) {
-  // Hook will implement removal; for now overwriting with empty isn't necessary.
-  // Keeping as a placeholder API.
-  void repoRoot;
+  const abs = join(getShipstampStateDir(repoRoot), "skip-next");
+  try {
+    unlinkSync(abs);
+  } catch {
+    // ignore
+  }
 }
 
 export function readPendingNextCommit(repoRoot: string): PendingNextCommitMarker | null {

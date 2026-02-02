@@ -6,7 +6,7 @@ import { collectStagedFiles } from "./staged";
 import { collectStagedPatch } from "./stagedPatch";
 import { discoverInstructionFiles } from "./instructions";
 import { hashFilesSha256 } from "./hash";
-import { writePendingNextCommit, writeSkipNext } from "./state";
+import { clearSkipNext, readPendingState, readSkipNext, writePendingNextCommit, writeSkipNext } from "./state";
 import { repoHasExistingPrecommitLinting } from "./precommitDetection";
 import { getShipstampEnv } from "./env";
 import { detectLinters } from "./lintersDetect";
@@ -80,6 +80,51 @@ function cmdReview(argv: string[]) {
 
   const branch = getBranchName() ?? "(detached)";
   void getHeadSha();
+
+  const skip = readSkipNext(repoRoot);
+  if (skip) {
+    clearSkipNext(repoRoot);
+    const md = formatReviewResultMarkdown({
+      status: "PASS",
+      findings: [
+        {
+          path: "package.json",
+          severity: "note",
+          title: "Shipstamp skipped",
+          message: `Shipstamp skipped this run (skip-next). Reason: ${skip.reason}`
+        }
+      ]
+    });
+    process.stdout.write(md);
+    process.stdout.write("\n");
+    return 0;
+  }
+
+  const pending = readPendingState(repoRoot);
+  const pendingOnBranch = pending.branches[branch] ?? [];
+  if (pendingOnBranch.length > 0) {
+    const list = pendingOnBranch.map((p) => `- ${p.sha}${p.reason ? ` (${p.reason})` : ""}`).join("\n");
+    const md = formatReviewResultMarkdown({
+      status: "FAIL",
+      findings: [
+        {
+          path: "package.json",
+          severity: "minor",
+          title: "Unchecked backlog on this branch",
+          message:
+            "Shipstamp previously allowed one or more commits without a completed review (offline/timeout).\n\n" +
+            "Unchecked commits:\n" +
+            `${list}\n\n` +
+            "To proceed, either:\n" +
+            "- Run `shipstamp skip-next --reason \"...\"` to bypass once, or\n" +
+            "- Use `git commit --no-verify` to bypass hooks\n"
+        }
+      ]
+    });
+    process.stdout.write(md);
+    process.stdout.write("\n");
+    return 1;
+  }
 
   try {
     const repoConfig = loadShipstampRepoConfig(repoRoot);
