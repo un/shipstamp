@@ -89,11 +89,28 @@ export default defineSchema({
     avgLatencyMs: v.optional(v.number())
   }).index("by_orgId_day_model", ["orgId", "day", "model"]),
 
+  orgInvites: defineTable({
+    orgId: v.id("orgs"),
+    email: v.string(),
+    code: v.string(),
+    role: v.string(),
+    invitedByUserId: v.optional(v.string()),
+    createdAtMs: v.number(),
+    expiresAtMs: v.number(),
+    acceptedAtMs: v.optional(v.number()),
+    acceptedUserId: v.optional(v.string())
+  })
+    .index("by_orgId", ["orgId"])
+    .index("by_email", ["email"])
+    .index("by_code", ["code"])
+    .index("by_orgId_email", ["orgId", "email"]),
+
   deviceAuthRequests: defineTable({
     deviceCode: v.string(),
     userCode: v.string(),
     status: v.string(),
     userId: v.optional(v.string()),
+    orgId: v.optional(v.id("orgs")),
     tokenHash: v.optional(v.string()),
     tokenPrefix: v.optional(v.string()),
     createdAtMs: v.number(),
@@ -107,6 +124,7 @@ export default defineSchema({
 
   apiTokens: defineTable({
     userId: v.string(),
+    orgId: v.optional(v.id("orgs")),
     tokenHash: v.string(),
     tokenPrefix: v.string(),
     createdAtMs: v.number(),
