@@ -95,7 +95,9 @@ export async function POST(request: Request) {
     });
   }
 
+  const t0 = Date.now();
   const result = await reviewWorkflow({ ...parsed.data, planTier });
+  const durationMs = Date.now() - t0;
 
   // Best-effort persistence (don’t block response on Convex write failures).
   try {
@@ -107,6 +109,7 @@ export async function POST(request: Request) {
       status: result.status,
       planTier,
       modelSet: planTier === "paid" ? "openai+anthropic+google" : "openai",
+      durationMs,
       findings: result.findings.map((f) => ({
         path: f.path,
         severity: f.severity,
