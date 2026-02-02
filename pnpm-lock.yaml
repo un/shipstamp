@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@shipstamp/npm':
+        specifier: workspace:*
+        version: link:packages/npm
       '@types/node':
         specifier: ^22.13.4
         version: 22.19.7
@@ -25,6 +28,12 @@ importers:
         version: link:../core
 
   packages/core: {}
+
+  packages/npm:
+    dependencies:
+      '@shipstamp/cli':
+        specifier: workspace:*
+        version: link:../cli
 
 packages:
 

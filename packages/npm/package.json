@@ -1,0 +1,11 @@
+{
+  "name": "@shipstamp/npm",
+  "version": "0.0.0",
+  "private": true,
+  "bin": {
+    "shipstamp": "bin/shipstamp.js"
+  },
+  "dependencies": {
+    "@shipstamp/cli": "workspace:*"
+  }
+}
