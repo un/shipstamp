@@ -7,6 +7,7 @@ import { collectStagedPatch } from "./stagedPatch";
 import { discoverInstructionFiles } from "./instructions";
 import { hashFilesSha256 } from "./hash";
 import { writeSkipNext } from "./state";
+import { repoHasExistingPrecommitLinting } from "./precommitDetection";
 
 function printHelp() {
   process.stdout.write(
@@ -92,6 +93,8 @@ function cmdReview(argv: string[]) {
 
   const discovered = discoverInstructionFiles(repoRoot, changedPaths, repoConfig.instructionFiles);
   void hashFilesSha256(repoRoot, discovered.uniqueInstructionFiles);
+
+  void repoHasExistingPrecommitLinting(repoRoot);
 
   // v0 scaffold: real staged diff collection lands in later steps.
   const md = formatReviewResultMarkdown({ status: "PASS", findings: [] });
