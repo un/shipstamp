@@ -62,6 +62,15 @@ export const recordRun = mutation({
     durationMs: v.optional(v.number()),
     originUrl: v.optional(v.string()),
     normalizedOriginUrl: v.optional(v.string()),
+    perModel: v.optional(
+      v.array(
+        v.object({
+          model: v.string(),
+          findingsCount: v.number(),
+          latencyMs: v.optional(v.number())
+        })
+      )
+    ),
     findings: v.array(FindingInput)
   },
   handler: async (ctx, args): Promise<{ runId: Id<"reviewRuns"> }> => {
@@ -114,6 +123,47 @@ export const recordRun = mutation({
         agreementAgreed: f.agreementAgreed,
         agreementTotal: f.agreementTotal
       });
+    }
+
+    // Best-effort per-model stats.
+    if (args.perModel && args.perModel.length > 0) {
+      const day = new Date(Date.now()).toISOString().slice(0, 10);
+      for (const m of args.perModel) {
+        const existing = await ctx.db
+          .query("modelStats")
+          .withIndex("by_orgId_day_model", (q) => q.eq("orgId", auth.orgId).eq("day", day).eq("model", m.model))
+          .unique();
+
+        if (!existing) {
+          await ctx.db.insert("modelStats", {
+            orgId: auth.orgId,
+            model: m.model,
+            day,
+            runs: 1,
+            findings: m.findingsCount,
+            avgLatencyMs: m.latencyMs
+          });
+          continue;
+        }
+
+        const nextRuns = existing.runs + 1;
+        const nextFindings = existing.findings + m.findingsCount;
+
+        let nextAvg: number | undefined = existing.avgLatencyMs ?? undefined;
+        if (typeof m.latencyMs === "number") {
+          if (typeof existing.avgLatencyMs === "number") {
+            nextAvg = Math.round((existing.avgLatencyMs * existing.runs + m.latencyMs) / nextRuns);
+          } else {
+            nextAvg = m.latencyMs;
+          }
+        }
+
+        await ctx.db.patch(existing._id, {
+          runs: nextRuns,
+          findings: nextFindings,
+          avgLatencyMs: nextAvg
+        });
+      }
     }
 
     return { runId };

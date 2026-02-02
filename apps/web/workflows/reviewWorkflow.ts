@@ -17,6 +17,7 @@ export type ReviewWorkflowInput = {
 export type ReviewWorkflowOutput = {
   status: "PASS" | "FAIL" | "UNCHECKED";
   findings: Finding[];
+  modelRuns?: Array<{ model: string; ok: boolean; latencyMs?: number; findingsCount: number }>;
 };
 
 export async function reviewWorkflow(input: ReviewWorkflowInput): Promise<ReviewWorkflowOutput> {
@@ -30,18 +31,23 @@ export async function reviewWorkflow(input: ReviewWorkflowInput): Promise<Review
     "Staged patch:\n" +
     input.stagedPatch;
 
-  const perModel: Array<{ modelName: string; findings: Finding[] }> = [];
+  const perModel: Array<{ model: string; ok: boolean; latencyMs?: number; findings: Finding[] }> = [];
 
   for (const spec of specs) {
     // Keep this workflow alive even in local dev with no API keys.
     try {
+      const t0 = Date.now();
       const { text } = await runText({ spec, prompt, temperature: 0.2, maxTokens: 1200 });
-      const modelName = `${spec.provider}/${spec.model}`;
-      perModel.push({ modelName, findings: normalizeModelOutputToFindings(modelName, text) });
+      const latencyMs = Date.now() - t0;
+      const model = `${spec.provider}/${spec.model}`;
+      const findings = normalizeModelOutputToFindings(model, text);
+      perModel.push({ model, ok: true, latencyMs, findings });
     } catch {
       // Local/dev without keys: treat as unchecked and allow the API route to decide.
+      const model = `${spec.provider}/${spec.model}`;
       perModel.push({
-        modelName: `${spec.provider}/${spec.model}`,
+        model,
+        ok: false,
         findings: [
           {
             path: "package.json",
@@ -57,7 +63,16 @@ export async function reviewWorkflow(input: ReviewWorkflowInput): Promise<Review
     await sleep(1);
   }
 
-  const findings = mergeFindings(perModel);
+  const findings = mergeFindings(perModel.map((m) => ({ modelName: m.model, findings: m.findings })));
   const status: ReviewResult["status"] = findings.some((f) => f.severity !== "note") ? "FAIL" : "PASS";
-  return { status, findings };
+  return {
+    status,
+    findings,
+    modelRuns: perModel.map((m) => ({
+      model: m.model,
+      ok: m.ok,
+      latencyMs: m.latencyMs,
+      findingsCount: m.findings.length
+    }))
+  };
 }

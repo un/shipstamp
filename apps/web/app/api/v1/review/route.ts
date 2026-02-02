@@ -110,6 +110,11 @@ export async function POST(request: Request) {
       planTier,
       modelSet: planTier === "paid" ? "openai+anthropic+google" : "openai",
       durationMs,
+      perModel: result.modelRuns?.map((m) => ({
+        model: m.model,
+        findingsCount: m.findingsCount,
+        latencyMs: m.latencyMs
+      })),
       findings: result.findings.map((f) => ({
         path: f.path,
         severity: f.severity,
