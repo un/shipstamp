@@ -6,6 +6,7 @@ import { collectStagedFiles } from "./staged";
 import { collectStagedPatch } from "./stagedPatch";
 import { discoverInstructionFiles } from "./instructions";
 import { hashFilesSha256 } from "./hash";
+import { writeSkipNext } from "./state";
 
 function printHelp() {
   process.stdout.write(
@@ -156,13 +157,18 @@ function cmdSkipNext(argv: string[]) {
     return 0;
   }
 
-  const reason = parsed.values.reason;
-  if (!reason) {
-    process.stderr.write("Missing required flag: --reason\n");
+  const reason = parsed.values.reason ?? "(no reason provided)";
+
+  let repoRoot: string;
+  try {
+    repoRoot = getRepoRoot();
+  } catch (err) {
+    process.stderr.write(`${(err as Error).message}\n`);
     return 2;
   }
 
-  process.stdout.write(`shipstamp skip-next (stub): ${reason}\n`);
+  writeSkipNext(repoRoot, { reason, createdAtMs: Date.now() });
+  process.stdout.write(`Shipstamp will skip the next commit hook run. Reason: ${reason}\n`);
   return 0;
 }
 
