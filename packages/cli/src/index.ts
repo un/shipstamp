@@ -1,6 +1,6 @@
 import { formatReviewResultMarkdown, SHIPSTAMP_CORE_VERSION } from "@shipstamp/core";
 import { parseArgs } from "node:util";
-import { getRepoRoot } from "./git";
+import { getBranchName, getHeadSha, getRepoRoot } from "./git";
 
 function printHelp() {
   process.stdout.write(
@@ -61,6 +61,10 @@ function cmdReview(argv: string[]) {
     process.stderr.write(`${(err as Error).message}\n`);
     return 2;
   }
+
+  // Collected for later API requests/backlog logic.
+  void getBranchName();
+  void getHeadSha();
 
   // v0 scaffold: real staged diff collection lands in later steps.
   const md = formatReviewResultMarkdown({ status: "PASS", findings: [] });

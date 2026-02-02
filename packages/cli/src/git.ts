@@ -19,3 +19,34 @@ export function getRepoRoot(cwd: string = process.cwd()): string {
     );
   }
 }
+
+export function getBranchName(cwd: string = process.cwd()): string | null {
+  try {
+    const out = execFileSync("git", ["symbolic-ref", "--quiet", "--short", "HEAD"], {
+      cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+
+    const branch = out.trim();
+    return branch.length > 0 ? branch : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getHeadSha(cwd: string = process.cwd()): string | null {
+  try {
+    const out = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+
+    const sha = out.trim();
+    return sha.length > 0 ? sha : null;
+  } catch {
+    // Empty repo (no commits) or not a repo.
+    return null;
+  }
+}
