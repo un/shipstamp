@@ -2,6 +2,7 @@ import { formatReviewResultMarkdown, SHIPSTAMP_CORE_VERSION } from "@shipstamp/c
 import { parseArgs } from "node:util";
 import { getBranchName, getHeadSha, getRepoRoot } from "./git";
 import { loadShipstampRepoConfig } from "./repoConfig";
+import { collectStagedFiles } from "./staged";
 
 function printHelp() {
   process.stdout.write(
@@ -75,6 +76,9 @@ function cmdReview(argv: string[]) {
   // Collected for later API requests/backlog logic.
   void getBranchName();
   void getHeadSha();
+
+  // v0 scaffold: start collecting staged metadata.
+  void collectStagedFiles(repoRoot);
 
   // v0 scaffold: real staged diff collection lands in later steps.
   const md = formatReviewResultMarkdown({ status: "PASS", findings: [] });
