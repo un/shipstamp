@@ -1,5 +1,6 @@
 import { formatReviewResultMarkdown, SHIPSTAMP_CORE_VERSION } from "@shipstamp/core";
 import { parseArgs } from "node:util";
+import { getRepoRoot } from "./git";
 
 function printHelp() {
   process.stdout.write(
@@ -50,6 +51,14 @@ function cmdReview(argv: string[]) {
 
   if (!parsed.values.staged) {
     process.stderr.write("Missing required flag: --staged\n");
+    return 2;
+  }
+
+  // Ensure we're inside a git repo early.
+  try {
+    getRepoRoot();
+  } catch (err) {
+    process.stderr.write(`${(err as Error).message}\n`);
     return 2;
   }
 
