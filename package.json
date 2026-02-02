@@ -5,6 +5,16 @@
   "engines": {
     "node": ">=22.14.0"
   },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
   "scripts": {
     "build": "pnpm -r run build --if-present",
     "typecheck": "pnpm -r run typecheck --if-present",
