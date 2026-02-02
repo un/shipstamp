@@ -273,3 +273,67 @@ export const getRun = query({
     return { run, repo, findings };
   }
 });
+
+export const listBranchesForRepo = query({
+  args: {
+    repoId: v.id("repos"),
+    limit: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    const repo = await ctx.db.get(args.repoId);
+    if (!repo) return [];
+
+    await requireOrgMember(ctx, repo.orgId);
+
+    const limit = Math.max(1, Math.min(args.limit ?? 200, 500));
+    const runs = await ctx.db
+      .query("reviewRuns")
+      .withIndex("by_repoId_createdAtMs", (q) => q.eq("repoId", args.repoId))
+      .order("desc")
+      .take(limit);
+
+    const byBranch = new Map<
+      string,
+      {
+        branch: string;
+        latest: {
+          runId: Id<"reviewRuns">;
+          status: string;
+          createdAtMs: number;
+          durationMs?: number;
+        };
+        uncheckedCount: number;
+        totalRuns: number;
+      }
+    >();
+
+    for (const run of runs) {
+      const existing = byBranch.get(run.branch);
+      if (!existing) {
+        byBranch.set(run.branch, {
+          branch: run.branch,
+          latest: {
+            runId: run._id,
+            status: run.status,
+            createdAtMs: run.createdAtMs,
+            durationMs: run.durationMs
+          },
+          uncheckedCount: run.status === "UNCHECKED" ? 1 : 0,
+          totalRuns: 1
+        });
+        continue;
+      }
+
+      existing.totalRuns++;
+      if (run.status === "UNCHECKED") existing.uncheckedCount++;
+    }
+
+    const out = [...byBranch.values()];
+    out.sort((a, b) => {
+      // Latest activity first, then branch name.
+      if (a.latest.createdAtMs !== b.latest.createdAtMs) return b.latest.createdAtMs - a.latest.createdAtMs;
+      return a.branch.localeCompare(b.branch);
+    });
+    return out;
+  }
+});
