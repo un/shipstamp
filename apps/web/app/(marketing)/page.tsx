@@ -169,7 +169,46 @@ export default async function Home() {
 
       <section id="faq" className="scroll-mt-24">
         <h2 className="text-base font-semibold">FAQ</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Landing page content is coming next.</p>
+        <div className="mt-4 flex flex-col gap-6 text-sm">
+          <div>
+            <h3 className="font-semibold">Do you store my repo code?</h3>
+            <p className="mt-2 text-muted-foreground">
+              Shipstamp avoids storing customer repo source code at rest. The server stores instruction file contents (by hash)
+              when configured (e.g. `AGENTS.md`), plus review outputs and aggregated usage/statistics. It does not store arbitrary
+              repo files.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-semibold">What happens if Shipstamp is offline or times out?</h3>
+            <p className="mt-2 text-muted-foreground">
+              The commit is allowed. The commit is marked `UNCHECKED` locally under `.git/shipstamp/`. The next run on the same
+              branch is blocked until the backlog is cleared or explicitly bypassed.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-semibold">How do I bypass Shipstamp?</h3>
+            <ul className="mt-2 list-disc space-y-1.5 pl-5 text-muted-foreground">
+              <li>One-shot bypass: `shipstamp skip-next --reason "&lt;why&gt;"`</li>
+              <li>Universal bypass: `git commit --no-verify`</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold">Is GitHub required?</h3>
+            <p className="mt-2 text-muted-foreground">For now, yes. Shipstamp sign-in uses GitHub.</p>
+          </div>
+
+          <div>
+            <h3 className="font-semibold">What does "reviews up to 5 files" mean on LLM Dabbler?</h3>
+            <p className="mt-2 text-muted-foreground">
+              If a commit changes more than 5 files, Shipstamp reviews the first 5 files only (unique staged paths sorted
+              lexicographically). The commit is still allowed, and the report includes a note listing skipped paths plus an
+              upgrade CTA.
+            </p>
+          </div>
+        </div>
       </section>
     </div>
   );
