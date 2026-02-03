@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "bun run --cwd ../.. convex:codegen:maybe && next build",
+    "build": "bun run --cwd ../../packages/core build && bun run --cwd ../.. convex:codegen:maybe && next build",
     "start": "next start",
     "lint": "eslint"
   },
