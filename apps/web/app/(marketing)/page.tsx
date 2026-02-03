@@ -198,7 +198,7 @@ export default async function Home() {
           <div>
             <h3 className="font-semibold">How do I bypass Shipstamp?</h3>
             <ul className="mt-2 list-disc space-y-1.5 pl-5 text-muted-foreground">
-              <li>One-shot bypass: `shipstamp skip-next --reason "&lt;why&gt;"`</li>
+              <li>One-shot bypass: `shipstamp skip-next --reason &quot;&lt;why&gt;&quot;`</li>
               <li>Universal bypass: `git commit --no-verify`</li>
             </ul>
           </div>
@@ -209,7 +209,7 @@ export default async function Home() {
           </div>
 
           <div>
-            <h3 className="font-semibold">What does "reviews up to 5 files" mean on LLM Dabbler?</h3>
+            <h3 className="font-semibold">What does &quot;reviews up to 5 files&quot; mean on LLM Dabbler?</h3>
             <p className="mt-2 text-muted-foreground">
               If a commit changes more than 5 files, Shipstamp reviews the first 5 files only (unique staged paths sorted
               lexicographically). The commit is still allowed, and the report includes a note listing skipped paths plus an
