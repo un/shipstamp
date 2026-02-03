@@ -1,21 +1,26 @@
 import { detectPackageManager, type PackageManager } from "./packageManager";
 
-export function makeShipstampReviewHookLine(pm: PackageManager): string {
-  if (pm === "pnpm") return "pnpm exec shipstamp review --staged";
-  if (pm === "npm") return "npm exec -- shipstamp review --staged";
-  if (pm === "yarn") return "yarn -s shipstamp review --staged";
-  if (pm === "bun") return "bunx shipstamp review --staged";
+function withHookUi(cmd: string): string {
+  // Always force stable Markdown output inside hooks.
+  return `SHIPSTAMP_HOOK=1 SHIPSTAMP_UI=plain ${cmd}`;
+}
 
-  return "npx --no-install shipstamp review --staged";
+export function makeShipstampReviewHookLine(pm: PackageManager): string {
+  if (pm === "pnpm") return withHookUi("pnpm exec shipstamp review --staged");
+  if (pm === "npm") return withHookUi("npm exec -- shipstamp review --staged");
+  if (pm === "yarn") return withHookUi("yarn -s shipstamp review --staged");
+  if (pm === "bun") return withHookUi("bunx shipstamp review --staged");
+
+  return withHookUi("npx --no-install shipstamp review --staged");
 }
 
 export function makeShipstampPostCommitHookLine(pm: PackageManager): string {
-  if (pm === "pnpm") return "pnpm exec shipstamp internal post-commit";
-  if (pm === "npm") return "npm exec -- shipstamp internal post-commit";
-  if (pm === "yarn") return "yarn -s shipstamp internal post-commit";
-  if (pm === "bun") return "bunx shipstamp internal post-commit";
+  if (pm === "pnpm") return withHookUi("pnpm exec shipstamp internal post-commit");
+  if (pm === "npm") return withHookUi("npm exec -- shipstamp internal post-commit");
+  if (pm === "yarn") return withHookUi("yarn -s shipstamp internal post-commit");
+  if (pm === "bun") return withHookUi("bunx shipstamp internal post-commit");
 
-  return "npx --no-install shipstamp internal post-commit";
+  return withHookUi("npx --no-install shipstamp internal post-commit");
 }
 
 export function getShipstampPostCommitHookLine(repoRoot: string): string {
