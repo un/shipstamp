@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 
@@ -13,8 +13,10 @@ function normalizeInviteCode(code: string) {
 }
 
 export function OnboardingClient() {
-  const orgs = useQuery(api.orgs.listMine);
-  const invites = useQuery(api.invites.listForMyEmail);
+  const { isAuthenticated: isConvexAuthenticated } = useConvexAuth();
+
+  const orgs = useQuery(api.orgs.listMine, isConvexAuthenticated ? undefined : "skip");
+  const invites = useQuery(api.invites.listForMyEmail, isConvexAuthenticated ? undefined : "skip");
 
   const createOrg = useMutation(api.orgs.create);
   const acceptInvite = useMutation(api.invites.acceptByCode);

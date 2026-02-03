@@ -1,4 +1,5 @@
 import { mutation, query } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 
@@ -58,11 +59,17 @@ async function requireOrgAdmin(ctx: any, orgId: Id<"orgs">) {
   return { userId: identity.subject };
 }
 
-async function getOrCreateSettings(ctx: any, orgId: Id<"orgs">) {
-  const existing = await ctx.db
+type SettingsReadCtx = Pick<QueryCtx, "db"> | Pick<MutationCtx, "db">;
+
+async function getSettings(ctx: SettingsReadCtx, orgId: Id<"orgs">) {
+  return await ctx.db
     .query("orgSettings")
     .withIndex("by_orgId", (q: any) => q.eq("orgId", orgId))
     .unique();
+}
+
+async function getOrCreateSettings(ctx: MutationCtx, orgId: Id<"orgs">) {
+  const existing = await getSettings(ctx, orgId);
   if (existing) return existing;
 
   const now = Date.now();
@@ -90,13 +97,12 @@ export const getForOrg = query({
       .unique();
     if (!membership) throw new Error("Forbidden");
 
-    const settings = await getOrCreateSettings(ctx, args.orgId);
-    if (!settings) throw new Error("failed_to_create_settings");
-
     const canEdit = membership.role === "owner" || membership.role === "admin";
+
+    const settings = await getSettings(ctx, args.orgId);
     return {
-      instructionFilenames: settings.instructionFilenames,
-      promptAppend: settings.promptAppend,
+      instructionFilenames: settings?.instructionFilenames ?? DEFAULT_INSTRUCTION_FILENAMES,
+      promptAppend: settings?.promptAppend ?? "",
       canEdit
     };
   }
@@ -109,11 +115,11 @@ export const getForToken = query({
   handler: async (ctx, args) => {
     const auth = await verifyApiToken(ctx, args.token);
     if (!auth) throw new Error("unauthorized");
-    const settings = await getOrCreateSettings(ctx, auth.orgId);
-    if (!settings) throw new Error("failed_to_create_settings");
+
+    const settings = await getSettings(ctx, auth.orgId);
     return {
-      instructionFilenames: settings.instructionFilenames,
-      promptAppend: settings.promptAppend
+      instructionFilenames: settings?.instructionFilenames ?? DEFAULT_INSTRUCTION_FILENAMES,
+      promptAppend: settings?.promptAppend ?? ""
     };
   }
 });

@@ -23,8 +23,8 @@
   },
   "scripts": {
     "dev": "concurrently -n convex,web -c cyan,magenta \"bun run dev:convex\" \"bun run dev:web\"",
-    "dev:web": "bun --filter web dev",
-    "dev:convex": "bun run convex:dev",
+    "dev:web": "bun --elide-lines=0 --filter web dev",
+    "dev:convex": "bun --elide-lines=0 run convex:dev",
     "build": "bun --workspaces --if-present run build",
     "typecheck": "bun --workspaces --if-present run typecheck",
     "lint": "bun --workspaces --if-present run lint",

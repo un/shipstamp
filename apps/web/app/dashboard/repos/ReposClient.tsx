@@ -1,16 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "convex/react";
-import { buttonVariants } from "@/components/ui/button";
+import { useConvexAuth, useQuery } from "convex/react";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "../../../../../convex/_generated/api";
 import { useSelectedOrg } from "../useSelectedOrg";
 
 export function ReposClient() {
-  const orgs = useQuery(api.orgs.listMine);
+  const { isAuthenticated: isConvexAuthenticated } = useConvexAuth();
+  const orgs = useQuery(api.orgs.listMine, isConvexAuthenticated ? undefined : "skip");
   const { selectedOrgId, setSelectedOrgId } = useSelectedOrg(orgs);
-  const repos = useQuery(api.repos.listForOrg, selectedOrgId ? { orgId: selectedOrgId as any } : "skip");
+  const selectedOrgIdForQueries =
+    selectedOrgId && orgs && orgs.some((o) => o.org._id === selectedOrgId) ? selectedOrgId : null;
+  const repos = useQuery(
+    api.repos.listForOrg,
+    isConvexAuthenticated && selectedOrgIdForQueries ? { orgId: selectedOrgIdForQueries as any } : "skip"
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground">

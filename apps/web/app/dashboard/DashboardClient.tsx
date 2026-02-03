@@ -1,39 +1,55 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
 import { api } from "../../../../convex/_generated/api";
 import { useSelectedOrg } from "./useSelectedOrg";
 
 export function DashboardClient() {
-  const identity = useQuery(api.auth.getCurrentUser);
+  const { isAuthenticated: isConvexAuthenticated } = useConvexAuth();
+  const identity = useQuery(api.auth.getCurrentUser, isConvexAuthenticated ? undefined : "skip");
   const session = authClient.useSession();
-  const orgs = useQuery(api.orgs.listMine);
+
+  const orgs = useQuery(api.orgs.listMine, isConvexAuthenticated ? undefined : "skip");
   const { selectedOrgId, setSelectedOrgId, selectedOrg, selectedOrgRole } = useSelectedOrg(orgs);
+  const selectedOrgIdForQueries =
+    selectedOrgId && orgs && orgs.some((o) => o.org._id === selectedOrgId) ? selectedOrgId : null;
   const day = new Date().toISOString().slice(0, 10);
   const recent = useQuery(
     api.reviews.listRecentForOrg,
-    selectedOrgId ? { orgId: selectedOrgId as any, limit: 10 } : "skip"
+    isConvexAuthenticated && selectedOrgIdForQueries
+      ? { orgId: selectedOrgIdForQueries as any, limit: 10 }
+      : "skip"
   );
   const myUsage = useQuery(
     api.usage.getMyDailyUsage,
-    selectedOrgId ? { orgId: selectedOrgId as any, day } : "skip"
+    isConvexAuthenticated && selectedOrgIdForQueries ? { orgId: selectedOrgIdForQueries as any, day } : "skip"
   );
   const orgUsage = useQuery(
     api.usage.getOrgDailyUsage,
-    selectedOrgId ? { orgId: selectedOrgId as any, day } : "skip"
+    isConvexAuthenticated && selectedOrgIdForQueries ? { orgId: selectedOrgIdForQueries as any, day } : "skip"
   );
   const modelStats = useQuery(
     api.stats.listModelStatsForOrgDay,
-    selectedOrgId ? { orgId: selectedOrgId as any, day } : "skip"
+    isConvexAuthenticated && selectedOrgIdForQueries ? { orgId: selectedOrgIdForQueries as any, day } : "skip"
   );
-  const repos = useQuery(api.repos.listForOrg, selectedOrgId ? { orgId: selectedOrgId as any } : "skip");
-  const members = useQuery(api.memberships.listForOrg, selectedOrgId ? { orgId: selectedOrgId as any } : "skip");
-  const orgSettings = useQuery(api.settings.getForOrg, selectedOrgId ? { orgId: selectedOrgId as any } : "skip");
+  const repos = useQuery(
+    api.repos.listForOrg,
+    isConvexAuthenticated && selectedOrgIdForQueries ? { orgId: selectedOrgIdForQueries as any } : "skip"
+  );
+  const members = useQuery(
+    api.memberships.listForOrg,
+    isConvexAuthenticated && selectedOrgIdForQueries ? { orgId: selectedOrgIdForQueries as any } : "skip"
+  );
+  const orgSettings = useQuery(
+    api.settings.getForOrg,
+    isConvexAuthenticated && selectedOrgIdForQueries ? { orgId: selectedOrgIdForQueries as any } : "skip"
+  );
   const appendPrompt = useMutation(api.settings.appendPrompt);
   const setInstructionFilenames = useMutation(api.settings.setInstructionFilenames);
   const [inviteEmail, setInviteEmail] = useState("");

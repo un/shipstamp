@@ -1,7 +1,7 @@
 import { isAuthenticated, fetchAuthQuery } from "@/lib/auth-server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "../../../../../../convex/_generated/api";
 

@@ -2,22 +2,24 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useMutation } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
-import { useQuery } from "convex/react";
 
 export default function DevicePage() {
+  const { isAuthenticated: isConvexAuthenticated } = useConvexAuth();
   const session = authClient.useSession();
   const approve = useMutation(api.deviceAuth.approve);
   const acceptInvite = useMutation(api.invites.acceptByCode);
   const createOrg = useMutation(api.orgs.create);
 
-  const orgs = useQuery(api.orgs.listMine);
-  const invites = useQuery(api.invites.listForMyEmail);
+  const canQuery = Boolean(session.data) && isConvexAuthenticated;
+  const orgs = useQuery(api.orgs.listMine, canQuery ? undefined : "skip");
+  const invites = useQuery(api.invites.listForMyEmail, canQuery ? undefined : "skip");
 
   const [code, setCode] = useState("");
   const [inviteCode, setInviteCode] = useState("");
