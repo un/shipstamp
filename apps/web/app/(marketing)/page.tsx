@@ -24,6 +24,15 @@ export default async function Home() {
             View pricing
           </Link>
         </div>
+
+        <div className="mt-6 rounded-lg border bg-card">
+          <div className="border-b px-3 py-2 text-xs text-muted-foreground">Install</div>
+          <pre className="overflow-x-auto px-3 py-2 text-xs leading-5">
+            <code>
+              {`# npm\nnpm i -g shipstamp\nshipstamp --help\n\n# curl\ncurl -fsSL https://shipstamp.ai/install | bash\nshipstamp --help`}
+            </code>
+          </pre>
+        </div>
       </section>
 
       <hr className="border-border" />
