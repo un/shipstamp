@@ -15,7 +15,7 @@ export default async function MarketingLayout({
   const ctaLabel = ok ? "Dashboard" : "Sign in";
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-mono">
+    <div className="min-h-screen bg-background text-foreground font-mono text-sm leading-6">
       <a
         href="#content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:border focus:bg-background focus:px-3 focus:py-2"
