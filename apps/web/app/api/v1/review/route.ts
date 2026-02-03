@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { z } from "zod";
-import { api } from "../../../../../../convex/_generated/api";
+import { api } from "@shipstamp/convex";
 import { reviewWorkflow } from "@/workflows/reviewWorkflow";
 
 export const runtime = "nodejs";

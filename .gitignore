@@ -4,5 +4,3 @@ dist/
 .env.*
 .next/
 coverage/
-convex/_generated/
-convex/**/_generated/

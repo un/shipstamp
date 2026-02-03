@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { api } from "@shipstamp/convex";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function ConvexHealth() {

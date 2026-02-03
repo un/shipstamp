@@ -27,6 +27,7 @@
         "@base-ui/react": "^1.1.0",
         "@convex-dev/better-auth": "0.10.10",
         "@react-email/components": "^1.0.6",
+        "@shipstamp/convex": "workspace:*",
         "@shipstamp/core": "workspace:*",
         "ai": "^6.0.68",
         "better-auth": "1.4.9",
@@ -63,6 +64,15 @@
         "@shipstamp/core": "workspace:*",
         "@t3-oss/env-core": "^0.13.8",
         "zod": "^3.24.2",
+      },
+    },
+    "packages/convex": {
+      "name": "@shipstamp/convex",
+      "version": "0.0.0",
+      "dependencies": {
+        "@convex-dev/better-auth": "0.10.10",
+        "better-auth": "1.4.9",
+        "convex": "^1.31.7",
       },
     },
     "packages/core": {
@@ -769,6 +779,8 @@
     "@selderee/plugin-htmlparser2": ["@selderee/plugin-htmlparser2@0.11.0", "", { "dependencies": { "domhandler": "^5.0.3", "selderee": "^0.11.0" } }, "sha512-P33hHGdldxGabLFjPPpaTxVolMrzrcegejx+0GxjrIb9Zv48D8yAIA/QTDR2dFl7Uz7urX8aX6+5bCZslr+gWQ=="],
 
     "@shipstamp/cli": ["@shipstamp/cli@workspace:packages/cli"],
+
+    "@shipstamp/convex": ["@shipstamp/convex@workspace:packages/convex"],
 
     "@shipstamp/core": ["@shipstamp/core@workspace:packages/core"],
 

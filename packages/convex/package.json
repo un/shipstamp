@@ -1,0 +1,31 @@
+{
+  "name": "@shipstamp/convex",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./convex/_generated/api.js",
+  "types": "./convex/_generated/api.d.ts",
+  "exports": {
+    ".": {
+      "types": "./convex/_generated/api.d.ts",
+      "default": "./convex/_generated/api.js"
+    },
+    "./api": {
+      "types": "./convex/_generated/api.d.ts",
+      "default": "./convex/_generated/api.js"
+    },
+    "./server": {
+      "types": "./convex/_generated/server.d.ts",
+      "default": "./convex/_generated/server.js"
+    }
+  },
+  "dependencies": {
+    "@convex-dev/better-auth": "0.10.10",
+    "better-auth": "1.4.9",
+    "convex": "^1.31.7"
+  },
+  "scripts": {
+    "dev": "bun run --cwd ../.. convex:dev",
+    "codegen": "bun run --cwd ../.. convex:codegen"
+  }
+}

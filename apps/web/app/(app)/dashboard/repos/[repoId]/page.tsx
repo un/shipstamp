@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { api } from "../../../../../../../convex/_generated/api";
+import { api } from "@shipstamp/convex";
 
 export default async function RepoPage({ params }: { params: { repoId: string } }) {
   const ok = await isAuthenticated();

@@ -2,7 +2,7 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../../../../../convex/_generated/api";
+import { api } from "@shipstamp/convex";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

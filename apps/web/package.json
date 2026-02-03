@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "bun run --cwd ../.. convex:codegen:maybe && next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -15,6 +15,7 @@
     "@base-ui/react": "^1.1.0",
     "@convex-dev/better-auth": "0.10.10",
     "@react-email/components": "^1.0.6",
+    "@shipstamp/convex": "workspace:*",
     "@shipstamp/core": "workspace:*",
     "ai": "^6.0.68",
     "better-auth": "1.4.9",

@@ -29,7 +29,8 @@
     "typecheck": "bun --workspaces --if-present run typecheck",
     "lint": "bun --workspaces --if-present run lint",
     "test": "bun --workspaces --if-present run test",
-    "convex:codegen": "bun x convex codegen",
-    "convex:dev": "bun x convex dev"
+    "convex:codegen:maybe": "bun scripts/convex-codegen-maybe.ts",
+    "convex:codegen": "bun scripts/with-repo-env.ts -- bun x convex codegen",
+    "convex:dev": "bun scripts/with-repo-env.ts -- bun x convex dev"
   }
 }

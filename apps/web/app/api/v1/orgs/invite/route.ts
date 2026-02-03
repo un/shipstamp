@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchAuthMutation, fetchAuthQuery, isAuthenticated } from "@/lib/auth-server";
-import { api } from "../../../../../../../convex/_generated/api";
+import { api } from "@shipstamp/convex";
 import { getResendClient, getResendFromEmail } from "@/lib/resend";
 import { InviteEmail } from "@/emails/InviteEmail";
 

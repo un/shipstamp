@@ -1,6 +1,6 @@
 import { ConvexHttpClient } from "convex/browser";
 import { NextResponse } from "next/server";
-import { api } from "../../../../../../../../convex/_generated/api";
+import { api } from "@shipstamp/convex";
 
 export async function POST(request: Request) {
   void request;

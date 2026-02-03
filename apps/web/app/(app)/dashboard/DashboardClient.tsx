@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
-import { api } from "../../../../../convex/_generated/api";
+import { api } from "@shipstamp/convex";
 import { useSelectedOrg } from "./useSelectedOrg";
 
 export function DashboardClient() {
