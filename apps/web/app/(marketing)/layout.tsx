@@ -63,6 +63,35 @@ export default async function MarketingLayout({
             </Link>
           </div>
         </div>
+
+        <div className="mx-auto w-full max-w-[78ch] px-6 pb-3 sm:hidden">
+          <nav aria-label="Sections" className="flex items-center gap-1 overflow-x-auto">
+            <Link
+              href="/#problem"
+              className="whitespace-nowrap rounded-md px-2 py-1 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+            >
+              Problem
+            </Link>
+            <Link
+              href="/#how-it-works"
+              className="whitespace-nowrap rounded-md px-2 py-1 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+            >
+              How it works
+            </Link>
+            <Link
+              href="/#pricing"
+              className="whitespace-nowrap rounded-md px-2 py-1 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/#faq"
+              className="whitespace-nowrap rounded-md px-2 py-1 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+            >
+              FAQ
+            </Link>
+          </nav>
+        </div>
       </header>
 
       <main id="content" className="mx-auto w-full max-w-[78ch] px-6 py-10">
