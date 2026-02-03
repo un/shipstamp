@@ -66,7 +66,13 @@ export default async function Home() {
 
       <section id="how-it-works" className="scroll-mt-24">
         <h2 className="text-base font-semibold">How it works</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Landing page content is coming next.</p>
+        <p className="mt-2 text-sm text-muted-foreground">A commit-time loop that ends at PASS.</p>
+        <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm">
+          <li>Stage changes.</li>
+          <li>Run `git commit`.</li>
+          <li>Shipstamp reviews the staged diff and prints a stable Markdown report (PASS, minor, major).</li>
+          <li>Your agent applies `suggestion` blocks, retries the commit, and iterates until PASS.</li>
+        </ol>
       </section>
 
       <section id="pricing" className="scroll-mt-24">
