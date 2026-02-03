@@ -123,7 +123,48 @@ export default async function Home() {
 
       <section id="pricing" className="scroll-mt-24">
         <h2 className="text-base font-semibold">Pricing</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Landing page content is coming next.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Pick your daily commit budget. Keep commits small, PRs quiet.</p>
+
+        <div className="mt-4 flex flex-col gap-3">
+          <div className="rounded-lg border bg-card p-4">
+            <div className="flex items-baseline justify-between gap-4">
+              <div className="text-sm font-semibold">LLM Dabbler</div>
+              <div className="text-sm text-muted-foreground">$0</div>
+            </div>
+            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm">
+              <li>69 commits/day</li>
+              <li>Reviews up to 5 files per commit</li>
+            </ul>
+            <div className="mt-3 rounded-md border bg-background px-3 py-2 text-sm">
+              <div className="text-xs text-muted-foreground">5-file cap semantics</div>
+              <div className="mt-2">
+                If a commit changes more than 5 files, Shipstamp reviews the first 5 files only (unique staged paths sorted
+                lexicographically). The commit is still allowed, and the report includes a note listing skipped paths plus an
+                upgrade CTA.
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border bg-card p-4">
+            <div className="flex items-baseline justify-between gap-4">
+              <div className="text-sm font-semibold">Agent Wrangler</div>
+              <div className="text-sm text-muted-foreground">$30/month</div>
+            </div>
+            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm">
+              <li>420 commits/day</li>
+            </ul>
+          </div>
+
+          <div className="rounded-lg border bg-card p-4">
+            <div className="flex items-baseline justify-between gap-4">
+              <div className="text-sm font-semibold">AGI Observer</div>
+              <div className="text-sm text-muted-foreground">$69.420/month</div>
+            </div>
+            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm">
+              <li>1337 commits/day</li>
+            </ul>
+          </div>
+        </div>
       </section>
 
       <section id="faq" className="scroll-mt-24">
