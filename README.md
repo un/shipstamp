@@ -15,9 +15,19 @@ Shipstamp is a staged-only, pre-commit code review gate designed for AI coding a
 ## Install (repo / dev)
 
 ```bash
-cd code
 bun install
 ```
+
+## Run (web + Convex)
+
+```bash
+bun dev
+```
+
+- Web app: http://localhost:3000
+- Run individually:
+  - `bun run dev:web`
+  - `bun run dev:convex`
 
 ## Configure
 

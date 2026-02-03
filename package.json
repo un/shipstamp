@@ -17,10 +17,14 @@
   "devDependencies": {
     "@shipstamp/npm": "workspace:*",
     "@types/node": "^22.13.4",
+    "concurrently": "^9.1.2",
     "tsup": "^8.4.0",
     "typescript": "^5.7.3"
   },
   "scripts": {
+    "dev": "concurrently -n convex,web -c cyan,magenta \"bun run dev:convex\" \"bun run dev:web\"",
+    "dev:web": "bun --filter web dev",
+    "dev:convex": "bun run convex:dev",
     "build": "bun --workspaces --if-present run build",
     "typecheck": "bun --workspaces --if-present run typecheck",
     "lint": "bun --workspaces --if-present run lint",
