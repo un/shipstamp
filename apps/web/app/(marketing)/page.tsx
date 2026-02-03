@@ -111,6 +111,16 @@ export default async function Home() {
         </div>
       </section>
 
+      <section aria-label="Privacy" className="pt-2">
+        <h2 className="text-base font-semibold">Privacy stance</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Short version: Shipstamp avoids storing customer repo source code at rest.</p>
+        <ul className="mt-4 list-disc space-y-2 pl-5 text-sm">
+          <li>The server stores instruction file contents (by hash) when configured (e.g. `AGENTS.md`).</li>
+          <li>The server stores review outputs and aggregated usage/statistics.</li>
+          <li>The server does not store arbitrary repo files.</li>
+        </ul>
+      </section>
+
       <section id="pricing" className="scroll-mt-24">
         <h2 className="text-base font-semibold">Pricing</h2>
         <p className="mt-2 text-sm text-muted-foreground">Landing page content is coming next.</p>
