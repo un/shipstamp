@@ -9,13 +9,30 @@ Shipstamp is a staged-only, pre-commit code review gate designed for AI coding a
 
 ## Requirements
 
-- Bun (repo package manager and CLI runtime)
+End users:
+
+- Node.js (for the npm installer wrapper)
+- Git
+
+Contributors / source builds:
+
+- Bun (repo package manager + CLI build/runtime for the interactive UI)
 - Node.js (used by Next.js/Convex tooling)
 
-## Install (repo / dev)
+## Install (recommended)
+
+Global install via npm (downloads a platform binary on install/first run):
 
 ```bash
-bun install
+npm i -g shipstamp
+shipstamp --help
+```
+
+Curl install (OpenCode-style):
+
+```bash
+curl -fsSL https://shipstamp.ai/install | bash
+shipstamp --help
 ```
 
 ## Run (web + Convex)
@@ -31,7 +48,7 @@ bun dev
 
 ## Configure
 
-SaaS mode needs an API base URL:
+Shipstamp is SaaS-first. You must point the CLI at a Shipstamp API base URL:
 
 ```bash
 export SHIPSTAMP_API_BASE_URL="https://<your-shipstamp-app-domain>"
@@ -40,7 +57,7 @@ export SHIPSTAMP_API_BASE_URL="https://<your-shipstamp-app-domain>"
 Authenticate the CLI:
 
 ```bash
-bun x shipstamp auth login
+shipstamp auth login
 ```
 
 ## Hook setup
@@ -48,7 +65,7 @@ bun x shipstamp auth login
 In a repo you want to protect:
 
 ```bash
-bun x shipstamp init
+shipstamp init
 ```
 
 Shipstamp integrates via Husky:
@@ -57,20 +74,27 @@ Shipstamp integrates via Husky:
 - Creates/appends `.husky/pre-commit` to run `shipstamp review --staged`
 - Creates/appends `.husky/post-commit` for unchecked-commit capture
 
+After `shipstamp init`, run your package manager install so Husky activates:
+
+```bash
+npm install
+# or: pnpm install / yarn install / bun install
+```
+
 ## Run a review
 
 ```bash
-bun x shipstamp review --staged
+shipstamp review --staged
 ```
 
-Output is always Markdown in hooks/CI. In an interactive terminal, Shipstamp shows an OpenTUI viewer by default.
+Hooks/CI output is always plain Markdown. In an interactive terminal, Shipstamp prefers a Bun-powered TUI (and falls back to a pager when needed).
 
 Force plain Markdown output:
 
 ```bash
-bun x shipstamp review --staged --plain
+shipstamp review --staged --plain
 # or
-SHIPSTAMP_UI=plain bun x shipstamp review --staged
+SHIPSTAMP_UI=plain shipstamp review --staged
 ```
 
 ## Unchecked policy (offline/timeout)
@@ -86,7 +110,7 @@ If Shipstamp cannot complete a review (network/timeout/server issues):
 - One-shot bypass (preferred):
 
 ```bash
-bun x shipstamp skip-next --reason "<why>"
+shipstamp skip-next --reason "<why>"
 ```
 
 - Universal bypass:
@@ -104,16 +128,31 @@ Shipstamp avoids storing customer repo source code at rest.
   - review outputs and aggregated usage/statistics
 - The server does not store arbitrary repo files.
 
+## Source builds / local service
+
+Official installs ship SaaS mode only; source-only features (like local-agent mode) are compile-time disabled in official builds.
+
+To run against a locally running Shipstamp service, build/run from source and point `SHIPSTAMP_API_BASE_URL` at localhost.
+
+```bash
+cd code
+bun install
+```
+
+Run the CLI from source:
+
+```bash
+bun packages/cli/src/index.ts --help
+bun packages/cli/src/index.ts review --staged
+```
+
 ## Source-only local-agent mode
 
 Local-agent mode shells out to a user-provided command and expects Shipstamp Markdown output.
-
-- Disabled in official builds at compile time.
-- Enabled for source builds.
 
 Use it with:
 
 ```bash
 export SHIPSTAMP_LOCAL_AGENT_COMMAND="<command that reads prompt from stdin>"
-bun x shipstamp review --staged --local-agent
+bun packages/cli/src/index.ts review --staged --local-agent
 ```
