@@ -15,7 +15,7 @@
     "convex": "^1.31.7"
   },
   "devDependencies": {
-    "@shipstamp/npm": "workspace:*",
+    "shipstamp": "workspace:*",
     "@types/node": "^22.13.4",
     "concurrently": "^9.1.2",
     "tsup": "^8.4.0",

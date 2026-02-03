@@ -41,7 +41,7 @@ export function initRepo(repoRoot: string): InitResult {
 
   // v0: ensure Husky and Shipstamp are present as dev deps.
   if (!devDeps.husky) devDeps.husky = "^9.0.0";
-  if (!devDeps["@shipstamp/npm"]) devDeps["@shipstamp/npm"] = "^0.0.0";
+  if (!devDeps.shipstamp) devDeps.shipstamp = "^0.0.0";
 
   writePackageJson(repoRoot, pkg);
 

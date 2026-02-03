@@ -1,0 +1,18 @@
+{
+  "name": "shipstamp",
+  "version": "0.0.0",
+  "description": "Shipstamp CLI installer/wrapper (downloads the platform binary)",
+  "bin": {
+    "shipstamp": "bin/shipstamp.js"
+  },
+  "files": [
+    "bin",
+    "lib"
+  ],
+  "scripts": {
+    "postinstall": "node bin/postinstall.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
