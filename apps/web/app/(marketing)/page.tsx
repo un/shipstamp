@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { isAuthenticated } from "@/lib/auth-server";
+import { cn } from "@/lib/utils";
 
 const MARKDOWN_CONTRACT_EXCERPT = [
   "# Shipstamp Review",
@@ -40,10 +41,16 @@ export default async function Home() {
         </p>
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
-          <Link href={primaryHref} className={buttonVariants({ variant: "default" })}>
+          <Link
+            href={primaryHref}
+            className={cn(buttonVariants({ variant: "default" }), "rounded-md shadow-none")}
+          >
             {primaryLabel}
           </Link>
-          <Link href="/#pricing" className={buttonVariants({ variant: "outline" })}>
+          <Link
+            href="/#pricing"
+            className={cn(buttonVariants({ variant: "outline" }), "rounded-md border-dashed bg-background/60 shadow-none")}
+          >
             View pricing
           </Link>
         </div>

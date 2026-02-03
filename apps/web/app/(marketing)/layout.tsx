@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { isAuthenticated } from "@/lib/auth-server";
+import { cn } from "@/lib/utils";
 
 const GITHUB_REPO_URL = "https://github.com/un/shipstamp";
 const NOISE_DATA_URL =
@@ -68,7 +69,10 @@ export default async function MarketingLayout({
           <div className="flex items-center gap-2">
             <Link
               href={ctaHref}
-              className={buttonVariants({ variant: "outline", size: "sm" })}
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "rounded-md border-dashed bg-background/60 shadow-none",
+              )}
             >
               {ctaLabel}
             </Link>
