@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const fsp = require("node:fs/promises");
 const path = require("node:path");
 const os = require("node:os");
+const http = require("node:http");
 const https = require("node:https");
 const crypto = require("node:crypto");
 
@@ -48,8 +49,15 @@ function resolveCachePaths(version) {
 
 function request(url) {
   return new Promise((resolve, reject) => {
-    const req = https.get(
-      url,
+    const u = new URL(url);
+    const client = u.protocol === "https:" ? https : u.protocol === "http:" ? http : null;
+    if (!client) {
+      reject(new Error(`Unsupported URL protocol: ${u.protocol}`));
+      return;
+    }
+
+    const req = client.get(
+      u,
       {
         headers: {
           "user-agent": "shipstamp-installer",
