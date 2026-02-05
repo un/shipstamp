@@ -1,5 +1,9 @@
 import { ensureHuskyHookAppends } from "./huskyHooks";
-import { getShipstampPostCommitHookLine, getShipstampReviewHookLine } from "./hookCommand";
+import {
+  getShipstampPostCommitHookLine,
+  getShipstampPushReviewHookLine,
+  getShipstampReviewHookLine
+} from "./hookCommand";
 import { readPackageJson, writePackageJson } from "./packageJson";
 
 function ensureScripts(pkg: any): Record<string, string> {
@@ -30,7 +34,13 @@ export type InitResult = {
   createdOrUpdatedHooks: boolean;
 };
 
-export function initRepo(repoRoot: string): InitResult {
+export type InitHookMode = "pre-commit" | "pre-push" | "both";
+
+export type InitOptions = {
+  hook?: InitHookMode;
+};
+
+export function initRepo(repoRoot: string, opts: InitOptions = {}): InitResult {
   const pkg = readPackageJson(repoRoot);
 
   const scripts = ensureScripts(pkg);
@@ -45,13 +55,22 @@ export function initRepo(repoRoot: string): InitResult {
 
   writePackageJson(repoRoot, pkg);
 
-  // Pre-commit hook (append-only, idempotent).
-  const reviewLine = getShipstampReviewHookLine(repoRoot);
-  ensureHuskyHookAppends(repoRoot, "pre-commit", reviewLine);
+  const hook = opts.hook ?? "pre-commit";
 
-  // Post-commit hook reserved for unchecked backlog capture.
-  const postCommitLine = getShipstampPostCommitHookLine(repoRoot);
-  ensureHuskyHookAppends(repoRoot, "post-commit", postCommitLine);
+  if (hook === "pre-commit" || hook === "both") {
+    // Pre-commit hook (append-only, idempotent).
+    const reviewLine = getShipstampReviewHookLine(repoRoot);
+    ensureHuskyHookAppends(repoRoot, "pre-commit", reviewLine);
+
+    // Post-commit hook reserved for unchecked backlog capture.
+    const postCommitLine = getShipstampPostCommitHookLine(repoRoot);
+    ensureHuskyHookAppends(repoRoot, "post-commit", postCommitLine);
+  }
+
+  if (hook === "pre-push" || hook === "both") {
+    const pushReviewLine = getShipstampPushReviewHookLine(repoRoot);
+    ensureHuskyHookAppends(repoRoot, "pre-push", pushReviewLine);
+  }
 
   return {
     updatedPackageJson: true,

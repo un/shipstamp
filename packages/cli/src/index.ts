@@ -1,4 +1,6 @@
 import { formatReviewResultMarkdown, SHIPSTAMP_CORE_VERSION } from "@shipstamp/core";
+import { readFileSync } from "node:fs";
+import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
 import {
   getBranchName,
@@ -13,14 +15,21 @@ import { collectStagedFiles } from "./staged";
 import { collectStagedPatch } from "./stagedPatch";
 import { discoverInstructionFiles } from "./instructions";
 import { hashFilesSha256 } from "./hash";
-import { clearSkipNext, readPendingState, readSkipNext, writePendingNextCommit, writeSkipNext } from "./state";
+import {
+  clearSkipNext,
+  readPendingState,
+  readSkipNext,
+  writePendingNextCommit,
+  writePendingState,
+  writeSkipNext
+} from "./state";
 import { repoHasExistingPrecommitLinting } from "./precommitDetection";
 import { getShipstampEnv } from "./env";
 import { detectLinters } from "./lintersDetect";
 import { selectStagedFilesForLinters } from "./linterFiles";
 import { detectPackageManager } from "./packageManager";
 import { runLintersInCheckMode } from "./runLinters";
-import { initRepo } from "./init";
+import { initRepo, type InitHookMode } from "./init";
 import { isOfflineOrTimeoutError } from "./errors";
 import { runPostCommit } from "./postCommit";
 import { deviceAuthLogin } from "./deviceAuth";
@@ -31,6 +40,7 @@ import { ShipstampApiClient, ShipstampApiError } from "./apiClient";
 import { assertSourceBuild, SHIPSTAMP_OFFICIAL_BUILD } from "./buildFlags";
 import { emitMarkdown, resolveShipstampUi } from "./ui";
 import { SHIPSTAMP_CLI_VERSION } from "./version";
+import { collectPushReviewInputFromHook, parsePrePushStdin } from "./pushReview";
 
 function printHelp() {
   process.stdout.write(
@@ -42,9 +52,10 @@ function printHelp() {
       "",
       "Commands:",
       "  review --staged        Review staged changes",
-      "  init                  Install git hooks + config (v0: stub)",
+      "  review --push          Review commits being pushed",
+      "  init [--hook ...]      Install git hooks + config (v0: stub)",
       "  auth login             Authenticate the CLI (v0: stub)",
-      "  skip-next --reason ... Bypass next commit (v0: stub)",
+      "  skip-next --reason ... Bypass next hook run (v0: stub)",
       "",
       "Global options:",
       "  -h, --help             Show help",
@@ -74,6 +85,7 @@ async function cmdReview(argv: string[]) {
     args: argv,
     options: {
       staged: { type: "boolean" },
+      push: { type: "boolean" },
       "local-agent": { type: "boolean" },
       tui: { type: "boolean" },
       plain: { type: "boolean" },
@@ -84,14 +96,19 @@ async function cmdReview(argv: string[]) {
 
   if (parsed.values.help) {
     const localAgent = SHIPSTAMP_OFFICIAL_BUILD ? "" : " [--local-agent]";
-    process.stdout.write(`Usage: shipstamp review --staged${localAgent} [--tui|--plain]\n`);
+    process.stdout.write(`Usage: shipstamp review (--staged|--push)${localAgent} [--tui|--plain]\n`);
     return 0;
   }
 
-  if (!parsed.values.staged) {
-    process.stderr.write("Missing required flag: --staged\n");
+  const wantsStaged = Boolean((parsed.values as any).staged);
+  const wantsPush = Boolean((parsed.values as any).push);
+
+  if ((wantsStaged && wantsPush) || (!wantsStaged && !wantsPush)) {
+    process.stderr.write("Missing required flag: --staged or --push\n");
     return 2;
   }
+
+  const mode: "staged" | "push" = wantsPush ? "push" : "staged";
 
   // Ensure we're inside a git repo early.
   let repoRoot: string;
@@ -102,8 +119,37 @@ async function cmdReview(argv: string[]) {
     return 2;
   }
 
-  const branch = getBranchName() ?? "(detached)";
-  void getHeadSha();
+  const headSha = getHeadSha(repoRoot);
+  if (mode === "push" && !headSha) {
+    process.stderr.write("Cannot review push changes in an empty repo (no commits).\n");
+    return 2;
+  }
+
+  const pushArgs = parsed.positionals;
+  const pushRemoteName = mode === "push" ? (pushArgs[0] ?? "origin") : "origin";
+
+  const pushStdin = (() => {
+    if (mode !== "push") return "";
+    if (process.stdin.isTTY) return "";
+    const probablyInHook = process.env.SHIPSTAMP_HOOK === "1" || Boolean(process.env.GIT_DIR) || pushArgs.length > 0;
+    if (!probablyInHook) return "";
+    try {
+      return readFileSync(0, "utf8");
+    } catch {
+      return "";
+    }
+  })();
+
+  const branchFromPush = (() => {
+    if (mode !== "push") return null;
+    const updates = parsePrePushStdin(pushStdin)
+      .map((u) => u.localRef)
+      .filter((r) => r.startsWith("refs/heads/"))
+      .map((r) => r.replace(/^refs\/heads\//, ""));
+    return updates.length === 1 ? updates[0]! : null;
+  })();
+
+  const branch = branchFromPush ?? getBranchName() ?? "(detached)";
 
   const isBunRuntime = typeof (globalThis as any).Bun !== "undefined";
 
@@ -154,12 +200,14 @@ async function cmdReview(argv: string[]) {
           severity: "minor",
           title: "Unchecked backlog on this branch",
           message:
-            "Shipstamp previously allowed one or more commits without a completed review (offline/timeout).\n\n" +
+            (mode === "push"
+              ? "Shipstamp previously allowed one or more pushes without a completed review (offline/timeout).\n\n"
+              : "Shipstamp previously allowed one or more commits without a completed review (offline/timeout).\n\n") +
             "Unchecked commits:\n" +
             `${list}\n\n` +
             "To proceed, either:\n" +
             "- Run `shipstamp skip-next --reason \"...\"` to bypass once, or\n" +
-            "- Use `git commit --no-verify` to bypass hooks\n"
+            (mode === "push" ? "- Use `git push --no-verify` to bypass hooks\n" : "- Use `git commit --no-verify` to bypass hooks\n")
         }
       ]
     });
@@ -171,11 +219,24 @@ async function cmdReview(argv: string[]) {
     const repoConfig = loadShipstampRepoConfig(repoRoot);
     const useLocalAgent = Boolean((parsed.values as any)["local-agent"]);
 
-    // v0 scaffold: start collecting staged metadata.
-    const stagedFiles = collectStagedFiles(repoRoot);
-    const stagedPatch = collectStagedPatch(repoRoot);
+    const reviewInput =
+      mode === "staged"
+        ? {
+            patch: collectStagedPatch(repoRoot),
+            files: collectStagedFiles(repoRoot),
+            commitShas: [] as string[]
+          }
+        : collectPushReviewInputFromHook(repoRoot, {
+            remoteName: pushRemoteName,
+            stdin: pushStdin,
+            headSha: headSha!
+          });
 
-    const changedPaths = stagedFiles
+    const reviewFiles = reviewInput.files;
+    const reviewPatch = reviewInput.patch;
+    const pushCommitShas = reviewInput.commitShas;
+
+    const changedPaths = reviewFiles
       .filter((f) => f.path && f.changeType !== "deleted")
       .map((f) => f.path);
 
@@ -184,7 +245,7 @@ async function cmdReview(argv: string[]) {
     void hashFilesSha256(repoRoot, discovered.uniqueInstructionFiles);
 
     const detectedLinters = detectLinters(repoRoot);
-    const selected = selectStagedFilesForLinters(stagedFiles, detectedLinters);
+    const selected = selectStagedFilesForLinters(reviewFiles, detectedLinters);
 
     const pm = detectPackageManager(repoRoot);
 
@@ -363,7 +424,7 @@ async function cmdReview(argv: string[]) {
         .join("\n\n");
 
       const prompt =
-        "You are Shipstamp in local-agent mode. Review ONLY the staged patch.\n" +
+        `You are Shipstamp in local-agent mode. Review ONLY the ${mode === "push" ? "push" : "staged"} patch.\n` +
         "Output MUST follow the Shipstamp Markdown contract:\n" +
         "- Start with '# Shipstamp Review'\n" +
         "- Include 'Result: PASS|FAIL|UNCHECKED'\n" +
@@ -371,7 +432,7 @@ async function cmdReview(argv: string[]) {
         "- Include '## Findings' grouped by file\n" +
         "- For each finding include Path/Severity/Agreement lines and optional ```suggestion blocks\n\n" +
         (instructionSections ? `Instruction files:\n\n${instructionSections}\n\n` : "") +
-        `Staged patch:\n${stagedPatch}`;
+        `${mode === "push" ? "Push patch" : "Staged patch"}:\n${reviewPatch}`;
 
       const { runLocalAgentMarkdownReview } = await import("./localAgent");
       const local = runLocalAgentMarkdownReview({
@@ -437,8 +498,8 @@ async function cmdReview(argv: string[]) {
             normalizedOriginUrl: normalizedOriginUrl ?? undefined,
             branch,
             planTier: "free",
-            stagedPatch,
-            stagedFiles: stagedFiles.map((f) => ({
+            stagedPatch: reviewPatch,
+            stagedFiles: reviewFiles.map((f) => ({
               path: f.path,
               changeType: f.changeType,
               isBinary: f.isBinary
@@ -450,11 +511,23 @@ async function cmdReview(argv: string[]) {
           });
 
           if (remote.status === "UNCHECKED") {
-            writePendingNextCommit(repoRoot, {
-              branch,
-              createdAtMs: Date.now(),
-              reason: "server_unchecked"
-            });
+            if (mode === "staged") {
+              writePendingNextCommit(repoRoot, {
+                branch,
+                createdAtMs: Date.now(),
+                reason: "server_unchecked"
+              });
+            } else {
+              const state = readPendingState(repoRoot);
+              const list = state.branches[branch] ?? [];
+              const existing = new Set(list.map((p) => p.sha));
+              const shas = pushCommitShas.length > 0 ? pushCommitShas : headSha ? [headSha] : [];
+              for (const sha of shas) {
+                if (!existing.has(sha)) list.push({ sha, createdAtMs: Date.now(), reason: "server_unchecked" });
+              }
+              state.branches[branch] = list;
+              writePendingState(repoRoot, state);
+            }
 
             const md = formatReviewResultMarkdown({
               status: "UNCHECKED",
@@ -467,7 +540,9 @@ async function cmdReview(argv: string[]) {
                         severity: "note",
                         title: "Unchecked review",
                         message:
-                          "Shipstamp could not complete the review. Commit is allowed, but Shipstamp will require reviewing this commit before the next commit on this branch."
+                          mode === "push"
+                            ? "Shipstamp could not complete the review. Push is allowed, but Shipstamp will require reviewing these commits before the next push on this branch."
+                            : "Shipstamp could not complete the review. Commit is allowed, but Shipstamp will require reviewing this commit before the next commit on this branch."
                       }
                     ]
             });
@@ -497,11 +572,34 @@ async function cmdReview(argv: string[]) {
     return status === "FAIL" ? 1 : 0;
   } catch (err) {
     if (isOfflineOrTimeoutError(err)) {
-      writePendingNextCommit(repoRoot, {
-        branch,
-        createdAtMs: Date.now(),
-        reason: (err as Error).message ?? "offline/timeout"
-      });
+      if (mode === "staged") {
+        writePendingNextCommit(repoRoot, {
+          branch,
+          createdAtMs: Date.now(),
+          reason: (err as Error).message ?? "offline/timeout"
+        });
+      } else {
+        const input = (() => {
+          try {
+            return collectPushReviewInputFromHook(repoRoot, {
+              remoteName: pushRemoteName,
+              stdin: pushStdin,
+              headSha: headSha!
+            });
+          } catch {
+            return { patch: "", files: [], commitShas: [], inferredBranch: null };
+          }
+        })();
+        const state = readPendingState(repoRoot);
+        const list = state.branches[branch] ?? [];
+        const existing = new Set(list.map((p) => p.sha));
+        const shas = input.commitShas.length > 0 ? input.commitShas : headSha ? [headSha] : [];
+        for (const sha of shas) {
+          if (!existing.has(sha)) list.push({ sha, createdAtMs: Date.now(), reason: (err as Error).message ?? "offline/timeout" });
+        }
+        state.branches[branch] = list;
+        writePendingState(repoRoot, state);
+      }
 
       const md = formatReviewResultMarkdown({
         status: "UNCHECKED",
@@ -511,7 +609,9 @@ async function cmdReview(argv: string[]) {
             severity: "note",
             title: "Unchecked review",
             message:
-              "Shipstamp could not complete the review (offline/timeout). Commit is allowed, but Shipstamp will require reviewing this commit before the next commit on this branch."
+              mode === "push"
+                ? "Shipstamp could not complete the review (offline/timeout). Push is allowed, but Shipstamp will require reviewing these commits before the next push on this branch."
+                : "Shipstamp could not complete the review (offline/timeout). Commit is allowed, but Shipstamp will require reviewing this commit before the next commit on this branch."
           }
         ]
       });
@@ -528,14 +628,60 @@ async function cmdInit(argv: string[]) {
   const parsed = parseArgs({
     args: argv,
     options: {
+      hook: { type: "string" },
       help: { type: "boolean", short: "h" }
     },
     allowPositionals: true
   });
 
   if (parsed.values.help) {
-    process.stdout.write("Usage: shipstamp init\n");
+    process.stdout.write("Usage: shipstamp init [--hook pre-commit|pre-push|both]\n");
     return 0;
+  }
+
+  async function promptInitHookMode(): Promise<InitHookMode> {
+    const stdinIsTty = Boolean(process.stdin.isTTY);
+    const stdoutIsTty = Boolean(process.stdout.isTTY);
+    if (!stdinIsTty || !stdoutIsTty) return "pre-commit";
+
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    const question = (q: string) => new Promise<string>((resolve) => rl.question(q, resolve));
+
+    try {
+      process.stdout.write(
+        [
+          "How do you want Shipstamp to run?",
+          "  1) On commit (pre-commit) [recommended]",
+          "  2) On push (pre-push)",
+          "  3) Both",
+          ""
+        ].join("\n")
+      );
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const answer = (await question("Select 1-3 [1]: ")).trim();
+        if (answer === "" || answer === "1") return "pre-commit";
+        if (answer === "2") return "pre-push";
+        if (answer === "3") return "both";
+        process.stdout.write("Invalid selection.\n");
+      }
+
+      return "pre-commit";
+    } finally {
+      rl.close();
+    }
+  }
+
+  const hookFlag = parsed.values.hook as string | undefined;
+  let selectedHookMode: InitHookMode;
+
+  if (!hookFlag) {
+    selectedHookMode = await promptInitHookMode();
+  } else if (hookFlag === "pre-commit" || hookFlag === "pre-push" || hookFlag === "both") {
+    selectedHookMode = hookFlag;
+  } else {
+    process.stderr.write(`Invalid --hook value: ${hookFlag}. Expected pre-commit, pre-push, or both.\n`);
+    return 2;
   }
 
   let repoRoot: string;
@@ -547,7 +693,7 @@ async function cmdInit(argv: string[]) {
   }
 
   try {
-    initRepo(repoRoot);
+    initRepo(repoRoot, { hook: selectedHookMode });
   } catch (err) {
     process.stderr.write(`Failed to initialize Shipstamp: ${(err as Error).message}\n`);
     return 2;
@@ -641,7 +787,7 @@ async function cmdSkipNext(argv: string[]) {
   }
 
   writeSkipNext(repoRoot, { reason, createdAtMs: Date.now() });
-  process.stdout.write(`Shipstamp will skip the next commit hook run. Reason: ${reason}\n`);
+  process.stdout.write(`Shipstamp will skip the next hook run. Reason: ${reason}\n`);
   return 0;
 }
 

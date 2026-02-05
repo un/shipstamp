@@ -68,13 +68,21 @@ In a repo you want to protect:
 
 ```bash
 shipstamp init
+# or: shipstamp init --hook pre-push
 ```
+
+`shipstamp init` is interactive in a TTY and will ask whether you want to run on commit or push.
 
 Shipstamp integrates via Husky:
 
 - Adds/extends `package.json#scripts.prepare` to include `husky install`
 - Creates/appends `.husky/pre-commit` to run `shipstamp review --staged`
 - Creates/appends `.husky/post-commit` for unchecked-commit capture
+
+Optional push-gate mode:
+
+- `shipstamp init --hook pre-push` creates/appends `.husky/pre-push` to run `shipstamp review --push`
+- `shipstamp init --hook both` installs both commit + push hooks
 
 After `shipstamp init`, run your package manager install so Husky activates:
 
@@ -119,6 +127,8 @@ shipstamp skip-next --reason "<why>"
 
 ```bash
 git commit --no-verify
+# or (if using pre-push mode):
+git push --no-verify
 ```
 
 ## Privacy stance
