@@ -37,7 +37,6 @@ import { loadToken } from "./token";
 import { readTextFile } from "./files";
 import { loadRepoEnv } from "./dotenvFile";
 import { GitPreflightApiClient, GitPreflightApiError } from "./apiClient";
-import { assertSourceBuild, GITPREFLIGHT_OFFICIAL_BUILD } from "./buildFlags";
 import { emitMarkdown, resolveGitPreflightUi } from "./ui";
 import { GITPREFLIGHT_CLI_VERSION } from "./version";
 import { collectPushReviewInputFromHook, parsePrePushStdin } from "./pushReview";
@@ -53,6 +52,8 @@ import {
 import { runInstallWizardTui } from "./installTui";
 import { markOnboardingNoticeShown, onboardingNoticeText, shouldShowOnboardingNotice } from "./onboarding";
 import { resolvePolicy } from "./policy";
+import { getDefaultLocalAgentCommand, getLocalAgentConfig, saveLocalAgentConfig, type LocalAgentProvider } from "./cliConfig";
+import { probeLocalAgentCommand } from "./localAgent";
 
 function printHelp() {
   process.stdout.write(
@@ -69,6 +70,7 @@ function printHelp() {
       "  uninstall --scope ...  Remove GitPreflight for a scope",
       "  status                 Show install status + effective scope",
       "  init [--hook ...]      Install git hooks + config (v0: stub)",
+      "  setup local-agent      Configure local-agent command",
       "  auth login             Authenticate the CLI (v0: stub)",
       "  skip-next --reason ... Bypass next hook run (v0: stub)",
       "",
@@ -110,8 +112,7 @@ async function cmdReview(argv: string[]) {
   });
 
   if (parsed.values.help) {
-    const localAgent = GITPREFLIGHT_OFFICIAL_BUILD ? "" : " [--local-agent]";
-    process.stdout.write(`Usage: gitpreflight review (--staged|--push)${localAgent} [--tui|--plain]\n`);
+    process.stdout.write("Usage: gitpreflight review (--staged|--push) [--local-agent] [--tui|--plain]\n");
     return 0;
   }
 
@@ -300,19 +301,6 @@ async function cmdReview(argv: string[]) {
 
     let findings: Array<import("@gitpreflight/core").Finding> = policyWarningFinding ? [policyWarningFinding] : [];
 
-    if (GITPREFLIGHT_OFFICIAL_BUILD && useLocalAgent) {
-      findings.push({
-        path: "package.json",
-        severity: "minor",
-        title: "Local-agent mode disabled",
-        message: "Local-agent mode is disabled in official GitPreflight builds. Build from source to enable source-only features."
-      });
-
-      const md = formatReviewResultMarkdown({ status: "FAIL", findings });
-      await emit(md);
-      return 1;
-    }
-
     const repoEnv = loadRepoEnv(repoRoot);
     const mergedEnv = { ...process.env, ...repoEnv } as NodeJS.ProcessEnv;
 
@@ -433,28 +421,16 @@ async function cmdReview(argv: string[]) {
       return 1;
     }
 
-    if (!GITPREFLIGHT_OFFICIAL_BUILD && useLocalAgent) {
-      try {
-        assertSourceBuild("Local-agent mode");
-      } catch (err) {
-        findings.push({
-          path: "package.json",
-          severity: "minor",
-          title: "Local-agent mode disabled",
-          message: (err as Error).message
-        });
-      }
-
-      const cmd = mergedEnv.GITPREFLIGHT_LOCAL_AGENT_COMMAND;
+    if (useLocalAgent) {
+      const localAgent = getLocalAgentConfig();
+      const cmd = localAgent?.command;
       if (!cmd || cmd.trim().length === 0) {
         findings.push({
-          path: ".env.local",
+          path: "~/.config/gitpreflight/config.json",
           severity: "minor",
           title: "Missing local agent command",
           message:
-            "Set GITPREFLIGHT_LOCAL_AGENT_COMMAND to a command that reads the prompt from stdin and prints GitPreflight Markdown to stdout.\n\n" +
-            "Example:\n\n" +
-            "`export GITPREFLIGHT_LOCAL_AGENT_COMMAND=\"opencode run\"`"
+            "No local-agent command is configured. Run `gitpreflight setup local-agent` to configure your local agent command."
         });
       }
 
@@ -483,9 +459,10 @@ async function cmdReview(argv: string[]) {
         (instructionSections ? `Instruction files:\n\n${instructionSections}\n\n` : "") +
         `${mode === "push" ? "Push patch" : "Staged patch"}:\n${reviewPatch}`;
 
+      const command = cmd as string;
       const { runLocalAgentMarkdownReview } = await import("./localAgent");
       const local = runLocalAgentMarkdownReview({
-        command: cmd!,
+        command,
         cwd: repoRoot,
         timeoutMs: repoConfig.timeoutMs,
         prompt
@@ -1051,6 +1028,90 @@ async function cmdAuth(argv: string[]) {
   return 2;
 }
 
+async function cmdSetup(argv: string[]) {
+  const sub = argv[0];
+  if (sub !== "local-agent") {
+    process.stderr.write("Usage: gitpreflight setup local-agent\n");
+    return 2;
+  }
+
+  const parsed = parseArgs({
+    args: argv.slice(1),
+    options: {
+      help: { type: "boolean", short: "h" }
+    },
+    allowPositionals: true
+  });
+
+  if (parsed.values.help) {
+    process.stdout.write("Usage: gitpreflight setup local-agent\n");
+    return 0;
+  }
+
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    process.stderr.write("`gitpreflight setup local-agent` is interactive and requires a TTY.\n");
+    return 2;
+  }
+
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const question = (q: string) => new Promise<string>((resolve) => rl.question(q, resolve));
+
+  let provider: LocalAgentProvider = "codex";
+  try {
+    process.stdout.write(
+      [
+        "Which local agent are you using?",
+        "  1) Codex",
+        "  2) Claude",
+        "  3) OpenCode",
+        ""
+      ].join("\n")
+    );
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const answer = (await question("Select 1-3 [1]: ")).trim();
+      if (answer === "" || answer === "1") {
+        provider = "codex";
+        break;
+      }
+      if (answer === "2") {
+        provider = "claude";
+        break;
+      }
+      if (answer === "3") {
+        provider = "opencode";
+        break;
+      }
+      process.stdout.write("Invalid selection.\n");
+    }
+  } finally {
+    rl.close();
+  }
+
+  const command = getDefaultLocalAgentCommand(provider);
+  process.stdout.write(`\nProbing local agent command: ${command}\n`);
+  const probe = probeLocalAgentCommand({
+    command,
+    cwd: process.cwd(),
+    timeoutMs: 20_000
+  });
+
+  if (!probe.ok) {
+    process.stderr.write("Local-agent probe failed. Configuration was not saved.\n");
+    process.stderr.write(`Command: ${command}\n`);
+    if (probe.exitCode !== null) process.stderr.write(`Exit code: ${probe.exitCode}\n`);
+    process.stderr.write(`Reason: ${probe.message}\n`);
+    if (probe.stderr) process.stderr.write(`stderr: ${probe.stderr}\n`);
+    process.stderr.write("Make sure the command is installed and available in your PATH, then rerun `gitpreflight setup local-agent`.\n");
+    return 1;
+  }
+
+  saveLocalAgentConfig({ provider, command });
+  process.stdout.write(`Saved local-agent config (${provider}: ${command}).\n`);
+  process.stdout.write("You can now run `gitpreflight review --staged --local-agent`.\n");
+  return 0;
+}
+
 async function cmdInternal(argv: string[]) {
   const sub = argv[0];
 
@@ -1141,6 +1202,7 @@ export async function runCli(argv: string[] = process.argv.slice(2)) {
   if (cmd === "uninstall") return await cmdUninstall(rest);
   if (cmd === "status") return await cmdStatus(rest);
   if (cmd === "init") return await cmdInit(rest);
+  if (cmd === "setup") return await cmdSetup(rest);
   if (cmd === "auth") return await cmdAuth(rest);
   if (cmd === "skip-next") return await cmdSkipNext(rest);
   if (cmd === "internal") return await cmdInternal(rest);

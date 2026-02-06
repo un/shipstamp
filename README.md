@@ -189,8 +189,6 @@ GitPreflight avoids storing customer repo source code at rest.
 
 ## Source builds / local service
 
-Official installs ship SaaS mode only; source-only features (like local-agent mode) are compile-time disabled in official builds.
-
 To run against a locally running GitPreflight service, build/run from source and point `GITPREFLIGHT_API_BASE_URL` at localhost.
 
 ```bash
@@ -205,13 +203,20 @@ bun packages/cli/src/index.ts --help
 bun packages/cli/src/index.ts review --staged
 ```
 
-## Source-only local-agent mode
+## Local-agent mode
 
-Local-agent mode shells out to a user-provided command and expects GitPreflight Markdown output.
+Local-agent mode shells out to a configured local agent command and expects GitPreflight Markdown output.
 
-Use it with:
+Configure it once:
 
 ```bash
-export GITPREFLIGHT_LOCAL_AGENT_COMMAND="<command that reads prompt from stdin>"
-bun packages/cli/src/index.ts review --staged --local-agent
+gitpreflight setup local-agent
+```
+
+The setup flow lets you choose a provider (`Codex`, `Claude`, or `OpenCode`), probes the command with a live check, and saves config under `~/.config/gitpreflight/config.json`.
+
+Then run reviews with local-agent mode:
+
+```bash
+gitpreflight review --staged --local-agent
 ```

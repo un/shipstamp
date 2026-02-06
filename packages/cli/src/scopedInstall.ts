@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
+import { getGitPreflightConfigDir, getLegacyMacConfigDir } from "./configPaths";
 import { initRepo, type InitHookMode } from "./init";
 
 export type InstallScope = "global" | "local" | "repo";
@@ -24,10 +25,7 @@ export type InstallStatus = {
 };
 
 function configDir(): string {
-  const xdg = process.env.XDG_CONFIG_HOME;
-  if (xdg && xdg.trim().length > 0) return join(xdg, "gitpreflight");
-  if (process.platform === "darwin") return join(homedir(), "Library", "Application Support", "gitpreflight");
-  return join(homedir(), ".config", "gitpreflight");
+  return getGitPreflightConfigDir();
 }
 
 function ensureDir(absDir: string) {
@@ -86,6 +84,12 @@ function globalManagedHooksPath(): string {
   return resolve(join(configDir(), "hooks"));
 }
 
+function legacyGlobalManagedHooksPath(): string | null {
+  if (process.platform !== "darwin") return null;
+  if (process.env.XDG_CONFIG_HOME && process.env.XDG_CONFIG_HOME.trim().length > 0) return null;
+  return resolve(join(getLegacyMacConfigDir(), "hooks"));
+}
+
 function localManagedHooksPath(repoRoot: string): string {
   return resolve(join(repoRoot, ".git", "gitpreflight", "hooks"));
 }
@@ -118,10 +122,11 @@ function installHooksInDir(hooksDir: string, hook: InitHookMode) {
 
 export function installGlobalScope(opts: { hook: InitHookMode }) {
   const managed = globalManagedHooksPath();
+  const legacyManaged = legacyGlobalManagedHooksPath();
   const current = tryRunGit(["config", "--global", "--get", "core.hooksPath"]);
   if (current) {
     const currentAbs = isAbsolute(current) ? resolve(current) : resolve(join(homedir(), current));
-    if (currentAbs !== managed) {
+    if (currentAbs !== managed && currentAbs !== legacyManaged) {
       throw new Error(
         `Global core.hooksPath is already set to '${current}'. Refusing to overwrite. Unset it first or use a different install scope.`
       );
@@ -134,10 +139,11 @@ export function installGlobalScope(opts: { hook: InitHookMode }) {
 
 export function uninstallGlobalScope() {
   const managed = globalManagedHooksPath();
+  const legacyManaged = legacyGlobalManagedHooksPath();
   const current = tryRunGit(["config", "--global", "--get", "core.hooksPath"]);
   if (!current) return;
   const currentAbs = isAbsolute(current) ? resolve(current) : resolve(join(homedir(), current));
-  if (currentAbs !== managed) return;
+  if (currentAbs !== managed && currentAbs !== legacyManaged) return;
   runGit(["config", "--global", "--unset", "core.hooksPath"]);
 }
 
@@ -185,7 +191,14 @@ function repoHuskyHasGitPreflight(repoRoot: string): boolean {
 export function getInstallStatus(repoRoot: string | null): InstallStatus {
   const globalPath = tryRunGit(["config", "--global", "--get", "core.hooksPath"]);
   const managedGlobal = globalManagedHooksPath();
-  const globalInstalled = Boolean(globalPath && (isAbsolute(globalPath) ? resolve(globalPath) : resolve(join(homedir(), globalPath))) === managedGlobal);
+  const legacyManagedGlobal = legacyGlobalManagedHooksPath();
+  const globalInstalled = Boolean(
+    globalPath &&
+      (() => {
+        const resolved = isAbsolute(globalPath) ? resolve(globalPath) : resolve(join(homedir(), globalPath));
+        return resolved === managedGlobal || resolved === legacyManagedGlobal;
+      })()
+  );
 
   let localPath: string | null = null;
   let managedLocal: string | null = null;
