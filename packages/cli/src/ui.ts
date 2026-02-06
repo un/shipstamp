@@ -1,29 +1,29 @@
 import { spawnSync } from "node:child_process";
 
-export type ShipstampUi = "plain" | "tui" | "pager";
+export type GitPreflightUi = "plain" | "tui" | "pager";
 
-function parseEnvUi(value: string | undefined): ShipstampUi | null {
+function parseEnvUi(value: string | undefined): GitPreflightUi | null {
   if (!value) return null;
   const v = value.trim().toLowerCase();
   if (v === "plain" || v === "tui" || v === "pager") return v;
   return null;
 }
 
-export function resolveShipstampUi(opts: {
+export function resolveGitPreflightUi(opts: {
   inCi: boolean;
   inHook: boolean;
   stdoutIsTty: boolean;
   isBunRuntime: boolean;
   argv: { plain: boolean; tui: boolean };
   env: NodeJS.ProcessEnv;
-}): ShipstampUi {
+}): GitPreflightUi {
   // Stable contract: hooks/CI/non-tty are always plain Markdown.
   if (opts.inCi || opts.inHook || !opts.stdoutIsTty) return "plain";
 
   if (opts.argv.plain) return "plain";
   if (opts.argv.tui && opts.isBunRuntime) return "tui";
 
-  const envUi = parseEnvUi(opts.env.SHIPSTAMP_UI);
+  const envUi = parseEnvUi(opts.env.GITPREFLIGHT_UI);
   if (envUi === "plain") return "plain";
   if (envUi === "tui") return opts.isBunRuntime ? "tui" : "plain";
   if (envUi === "pager") return "pager";
@@ -33,7 +33,7 @@ export function resolveShipstampUi(opts: {
   return "pager";
 }
 
-export async function emitMarkdown(opts: { ui: ShipstampUi; markdown: string }): Promise<void> {
+export async function emitMarkdown(opts: { ui: GitPreflightUi; markdown: string }): Promise<void> {
   if (opts.ui === "tui") {
     const { renderReviewTui } = await import("./tui");
     await renderReviewTui(opts.markdown);

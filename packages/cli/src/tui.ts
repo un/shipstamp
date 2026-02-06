@@ -77,7 +77,7 @@ export async function renderReviewTui(markdown: string): Promise<void> {
   left.add(
     new TextRenderable(renderer, {
       id: "title",
-      content: `Shipstamp Review${summary.status ? ` · ${summary.status}` : ""}`,
+      content: `GitPreflight Review${summary.status ? ` · ${summary.status}` : ""}`,
       fg: statusColor
     })
   );

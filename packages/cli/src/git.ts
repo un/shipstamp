@@ -15,7 +15,7 @@ export function getRepoRoot(cwd: string = process.cwd()): string {
     return root;
   } catch {
     throw new Error(
-      "Not in a git repository. Run Shipstamp from inside a git repo (or `cd` into one) and try again."
+      "Not in a git repository. Run GitPreflight from inside a git repo (or `cd` into one) and try again."
     );
   }
 }

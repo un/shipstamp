@@ -13,13 +13,13 @@ function ensureDir(absDir: string) {
 
 function configDir(): string {
   const xdg = process.env.XDG_CONFIG_HOME;
-  if (xdg && xdg.trim().length > 0) return join(xdg, "shipstamp");
+  if (xdg && xdg.trim().length > 0) return join(xdg, "gitpreflight");
 
   if (process.platform === "darwin") {
-    return join(homedir(), "Library", "Application Support", "shipstamp");
+    return join(homedir(), "Library", "Application Support", "gitpreflight");
   }
 
-  return join(homedir(), ".config", "shipstamp");
+  return join(homedir(), ".config", "gitpreflight");
 }
 
 function tokenPath(): string {
@@ -58,5 +58,5 @@ export function loadToken(): string {
     // ignore
   }
 
-  throw new Error("No Shipstamp token found. Run `shipstamp auth login` first.");
+  throw new Error("No GitPreflight token found. Run `gitpreflight auth login` first.");
 }

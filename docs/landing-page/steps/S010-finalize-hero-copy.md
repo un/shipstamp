@@ -6,7 +6,7 @@ Clean PRs by default. Fix issues at commit time.
 
 ## One-liner
 
-Shipstamp runs staged-only pre-commit reviews and returns stable, actionable Markdown your agent can apply before you push.
+GitPreflight runs staged-only pre-commit reviews and returns stable, actionable Markdown your agent can apply before you push.
 
 ## Notes
 

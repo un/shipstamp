@@ -9,8 +9,8 @@ function parseResultStatus(markdown: string): "PASS" | "FAIL" | "UNCHECKED" | nu
   return (m?.[1] as any) ?? null;
 }
 
-function looksLikeShipstampMarkdown(markdown: string): boolean {
-  const hasHeader = /^#\s+Shipstamp\s+Review\s*$/m.test(markdown);
+function looksLikeGitpreflightMarkdown(markdown: string): boolean {
+  const hasHeader = /^#\s+GitPreflight\s+Review\s*$/m.test(markdown);
   const hasCounts = /^Counts:\s*note=\d+\s+minor=\d+\s+major=\d+\s*$/m.test(markdown);
   const hasFindingsHeader = /^##\s+Findings\s*$/m.test(markdown);
   return hasHeader && hasCounts && hasFindingsHeader;
@@ -44,11 +44,11 @@ export function runLocalAgentMarkdownReview(opts: {
   }
 
   const status = parseResultStatus(stdout);
-  if (!looksLikeShipstampMarkdown(stdout) || !status) {
+  if (!looksLikeGitpreflightMarkdown(stdout) || !status) {
     return {
       ok: false,
       errorMessage:
-        "Local agent output did not match the Shipstamp Markdown contract (missing required header/Counts/Findings/Result lines)."
+        "Local agent output did not match the GitPreflight Markdown contract (missing required header/Counts/Findings/Result lines)."
     };
   }
 

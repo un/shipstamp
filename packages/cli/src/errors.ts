@@ -20,7 +20,7 @@ export function isOfflineOrTimeoutError(err: unknown): boolean {
     "EAI_AGAIN",
     "EHOSTUNREACH",
     "ENETUNREACH",
-    "ESHIPSTAMP_SERVER"
+    "EGITPREFLIGHT_SERVER"
   ]);
   if (codes.has(code)) return true;
 

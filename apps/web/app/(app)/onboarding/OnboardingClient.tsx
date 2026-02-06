@@ -2,7 +2,7 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useEffect, useMemo, useState } from "react";
-import { api } from "@shipstamp/convex";
+import { api } from "@gitpreflight/convex";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,7 +58,7 @@ export function OnboardingClient() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-16">
       <div>
-        <div className="text-2xl font-semibold">Welcome to Shipstamp</div>
+        <div className="text-2xl font-semibold">Welcome to GitPreflight</div>
         <div className="text-sm text-muted-foreground">Create an org or join one via invite.</div>
       </div>
 

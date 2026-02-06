@@ -9,4 +9,4 @@
 
 ## Differentiator line
 
-PR bots comment on your PR. Shipstamp fixes your commit before it becomes a PR.
+PR bots comment on your PR. GitPreflight fixes your commit before it becomes a PR.

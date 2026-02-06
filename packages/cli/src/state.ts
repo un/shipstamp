@@ -38,8 +38,8 @@ export function getGitDir(repoRoot: string): string {
   return resolve(repoRoot, gitDir);
 }
 
-export function getShipstampStateDir(repoRoot: string): string {
-  const dir = join(getGitDir(repoRoot), "shipstamp");
+export function getGitpreflightStateDir(repoRoot: string): string {
+  const dir = join(getGitDir(repoRoot), "gitpreflight");
   ensureDir(dir);
   return dir;
 }
@@ -51,7 +51,7 @@ function writeFileAtomic(absPath: string, contents: string) {
 }
 
 export function readPendingState(repoRoot: string): PendingState {
-  const abs = join(getShipstampStateDir(repoRoot), "pending.json");
+  const abs = join(getGitpreflightStateDir(repoRoot), "pending.json");
   try {
     const raw = JSON.parse(readFileSync(abs, "utf8"));
     if (!raw || typeof raw !== "object") return { branches: {} };
@@ -64,12 +64,12 @@ export function readPendingState(repoRoot: string): PendingState {
 }
 
 export function writePendingState(repoRoot: string, state: PendingState) {
-  const abs = join(getShipstampStateDir(repoRoot), "pending.json");
+  const abs = join(getGitpreflightStateDir(repoRoot), "pending.json");
   writeFileAtomic(abs, JSON.stringify(state, null, 2) + "\n");
 }
 
 export function readSkipNext(repoRoot: string): SkipNextState | null {
-  const abs = join(getShipstampStateDir(repoRoot), "skip-next");
+  const abs = join(getGitpreflightStateDir(repoRoot), "skip-next");
   try {
     const raw = JSON.parse(readFileSync(abs, "utf8"));
     if (!raw || typeof raw !== "object") return null;
@@ -83,12 +83,12 @@ export function readSkipNext(repoRoot: string): SkipNextState | null {
 }
 
 export function writeSkipNext(repoRoot: string, state: SkipNextState) {
-  const abs = join(getShipstampStateDir(repoRoot), "skip-next");
+  const abs = join(getGitpreflightStateDir(repoRoot), "skip-next");
   writeFileAtomic(abs, JSON.stringify(state, null, 2) + "\n");
 }
 
 export function clearSkipNext(repoRoot: string) {
-  const abs = join(getShipstampStateDir(repoRoot), "skip-next");
+  const abs = join(getGitpreflightStateDir(repoRoot), "skip-next");
   try {
     unlinkSync(abs);
   } catch {
@@ -97,7 +97,7 @@ export function clearSkipNext(repoRoot: string) {
 }
 
 export function readPendingNextCommit(repoRoot: string): PendingNextCommitMarker | null {
-  const abs = join(getShipstampStateDir(repoRoot), "pending-next-commit");
+  const abs = join(getGitpreflightStateDir(repoRoot), "pending-next-commit");
   try {
     const raw = JSON.parse(readFileSync(abs, "utf8"));
     if (!raw || typeof raw !== "object") return null;
@@ -112,12 +112,12 @@ export function readPendingNextCommit(repoRoot: string): PendingNextCommitMarker
 }
 
 export function writePendingNextCommit(repoRoot: string, marker: PendingNextCommitMarker) {
-  const abs = join(getShipstampStateDir(repoRoot), "pending-next-commit");
+  const abs = join(getGitpreflightStateDir(repoRoot), "pending-next-commit");
   writeFileAtomic(abs, JSON.stringify(marker, null, 2) + "\n");
 }
 
 export function clearPendingNextCommit(repoRoot: string) {
-  const abs = join(getShipstampStateDir(repoRoot), "pending-next-commit");
+  const abs = join(getGitpreflightStateDir(repoRoot), "pending-next-commit");
   try {
     unlinkSync(abs);
   } catch {

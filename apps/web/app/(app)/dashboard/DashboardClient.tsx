@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
-import { api } from "@shipstamp/convex";
+import { api } from "@gitpreflight/convex";
 import { useSelectedOrg } from "./useSelectedOrg";
 
 export function DashboardClient() {
@@ -206,7 +206,7 @@ export function DashboardClient() {
             {repos === undefined ? (
               <div className="text-sm text-muted-foreground">Loading repos...</div>
             ) : repos.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No repos yet (run `shipstamp review` once).</div>
+              <div className="text-sm text-muted-foreground">No repos yet (run `gitpreflight review` once).</div>
             ) : (
               <div className="flex flex-col gap-2">
                 {repos.slice(0, 8).map((r) => (

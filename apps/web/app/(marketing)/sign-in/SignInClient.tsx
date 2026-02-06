@@ -15,7 +15,7 @@ export default function SignInClient() {
       <Card>
         <CardHeader>
           <CardTitle>Sign in</CardTitle>
-          <CardDescription>Authenticate with GitHub to access Shipstamp.</CardDescription>
+          <CardDescription>Authenticate with GitHub to access GitPreflight.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <Button

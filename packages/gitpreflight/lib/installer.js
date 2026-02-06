@@ -8,7 +8,7 @@ const http = require("node:http");
 const https = require("node:https");
 const crypto = require("node:crypto");
 
-const DEFAULT_GITHUB_REPO = "un/shipstamp";
+const DEFAULT_GITHUB_REPO = "un/gitpreflight";
 
 function isTruthy(v) {
   return v === "1" || v === "true" || v === "yes";
@@ -27,10 +27,10 @@ function resolveTarget() {
   const arch = process.arch;
 
   if (platform !== "darwin" && platform !== "linux") {
-    throw new Error(`Unsupported platform: ${platform}. Shipstamp supports macOS and Linux.`);
+    throw new Error(`Unsupported platform: ${platform}. GitPreflight supports macOS and Linux.`);
   }
   if (arch !== "x64" && arch !== "arm64") {
-    throw new Error(`Unsupported architecture: ${arch}. Shipstamp supports x64 and arm64.`);
+    throw new Error(`Unsupported architecture: ${arch}. GitPreflight supports x64 and arm64.`);
   }
 
   return { platform, arch };
@@ -38,12 +38,12 @@ function resolveTarget() {
 
 function resolveCachePaths(version) {
   const home = os.homedir();
-  const base = process.env.SHIPSTAMP_HOME && process.env.SHIPSTAMP_HOME.trim()
-    ? process.env.SHIPSTAMP_HOME.trim()
-    : path.join(home, ".shipstamp");
+  const base = process.env.GITPREFLIGHT_HOME && process.env.GITPREFLIGHT_HOME.trim()
+    ? process.env.GITPREFLIGHT_HOME.trim()
+    : path.join(home, ".gitpreflight");
 
   const dir = path.join(base, "bin", version);
-  const binPath = path.join(dir, "shipstamp");
+  const binPath = path.join(dir, "gitpreflight");
   return { dir, binPath };
 }
 
@@ -60,7 +60,7 @@ function request(url) {
       u,
       {
         headers: {
-          "user-agent": "shipstamp-installer",
+          "user-agent": "gitpreflight-installer",
           accept: "application/octet-stream"
         }
       },
@@ -180,27 +180,27 @@ async function chmod755(p) {
   }
 }
 
-async function ensureShipstampBinary(opts) {
-  const version = (process.env.SHIPSTAMP_INSTALL_VERSION && process.env.SHIPSTAMP_INSTALL_VERSION.trim()) || getPackageVersion();
-  const repo = (process.env.SHIPSTAMP_GITHUB_REPO && process.env.SHIPSTAMP_GITHUB_REPO.trim()) || DEFAULT_GITHUB_REPO;
+async function ensureGitPreflightBinary(opts) {
+  const version = (process.env.GITPREFLIGHT_INSTALL_VERSION && process.env.GITPREFLIGHT_INSTALL_VERSION.trim()) || getPackageVersion();
+  const repo = (process.env.GITPREFLIGHT_GITHUB_REPO && process.env.GITPREFLIGHT_GITHUB_REPO.trim()) || DEFAULT_GITHUB_REPO;
 
-  const baseUrlOverride = process.env.SHIPSTAMP_INSTALL_BASE_URL && process.env.SHIPSTAMP_INSTALL_BASE_URL.trim()
-    ? process.env.SHIPSTAMP_INSTALL_BASE_URL.trim().replace(/\/+$/, "")
+  const baseUrlOverride = process.env.GITPREFLIGHT_INSTALL_BASE_URL && process.env.GITPREFLIGHT_INSTALL_BASE_URL.trim()
+    ? process.env.GITPREFLIGHT_INSTALL_BASE_URL.trim().replace(/\/+$/, "")
     : null;
 
   if (!version) {
-    throw new Error("Could not determine Shipstamp version to install");
+    throw new Error("Could not determine GitPreflight version to install");
   }
 
   if (version === "0.0.0" && !baseUrlOverride) {
     throw new Error(
-      "Shipstamp is running from a source checkout (version 0.0.0). " +
-        "Build from source, or set SHIPSTAMP_INSTALL_VERSION to a released version."
+      "GitPreflight is running from a source checkout (version 0.0.0). " +
+        "Build from source, or set GITPREFLIGHT_INSTALL_VERSION to a released version."
     );
   }
 
   const { platform, arch } = resolveTarget();
-  const assetName = `shipstamp-v${version}-${platform}-${arch}`;
+  const assetName = `gitpreflight-v${version}-${platform}-${arch}`;
   const base = baseUrlOverride ?? `https://github.com/${repo}/releases/download/v${version}`;
   const assetUrl = `${base}/${assetName}`;
   const checksumsUrl = `${base}/checksums.txt`;
@@ -211,10 +211,10 @@ async function ensureShipstampBinary(opts) {
   }
 
   await fsp.mkdir(dir, { recursive: true });
-  const tmpPath = path.join(dir, `shipstamp.tmp-${process.pid}-${Date.now()}`);
+  const tmpPath = path.join(dir, `gitpreflight.tmp-${process.pid}-${Date.now()}`);
 
-  if (!isTruthy(process.env.SHIPSTAMP_QUIET_INSTALL) && opts?.reason !== "postinstall") {
-    process.stderr.write(`Shipstamp: downloading ${assetName}...\n`);
+  if (!isTruthy(process.env.GITPREFLIGHT_QUIET_INSTALL) && opts?.reason !== "postinstall") {
+    process.stderr.write(`GitPreflight: downloading ${assetName}...\n`);
   }
 
   await downloadFile(assetUrl, tmpPath);
@@ -239,5 +239,5 @@ async function ensureShipstampBinary(opts) {
 }
 
 module.exports = {
-  ensureShipstampBinary
+  ensureGitPreflightBinary
 };

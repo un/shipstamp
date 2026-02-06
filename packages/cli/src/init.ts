@@ -1,8 +1,8 @@
 import { ensureHuskyHookAppends } from "./huskyHooks";
 import {
-  getShipstampPostCommitHookLine,
-  getShipstampPushReviewHookLine,
-  getShipstampReviewHookLine
+  getGitPreflightPostCommitHookLine,
+  getGitPreflightPushReviewHookLine,
+  getGitPreflightReviewHookLine
 } from "./hookCommand";
 import { readPackageJson, writePackageJson } from "./packageJson";
 
@@ -49,9 +49,9 @@ export function initRepo(repoRoot: string, opts: InitOptions = {}): InitResult {
   // v0: ensure team members get hooks on install.
   ensurePrepareIncludesHuskyInstall(scripts);
 
-  // v0: ensure Husky and Shipstamp are present as dev deps.
+  // v0: ensure Husky and GitPreflight are present as dev deps.
   if (!devDeps.husky) devDeps.husky = "^9.0.0";
-  if (!devDeps.shipstamp) devDeps.shipstamp = "^0.0.0";
+  if (!devDeps.gitpreflight) devDeps.gitpreflight = "^0.0.0";
 
   writePackageJson(repoRoot, pkg);
 
@@ -59,16 +59,16 @@ export function initRepo(repoRoot: string, opts: InitOptions = {}): InitResult {
 
   if (hook === "pre-commit" || hook === "both") {
     // Pre-commit hook (append-only, idempotent).
-    const reviewLine = getShipstampReviewHookLine(repoRoot);
+    const reviewLine = getGitPreflightReviewHookLine(repoRoot);
     ensureHuskyHookAppends(repoRoot, "pre-commit", reviewLine);
 
     // Post-commit hook reserved for unchecked backlog capture.
-    const postCommitLine = getShipstampPostCommitHookLine(repoRoot);
+    const postCommitLine = getGitPreflightPostCommitHookLine(repoRoot);
     ensureHuskyHookAppends(repoRoot, "post-commit", postCommitLine);
   }
 
   if (hook === "pre-push" || hook === "both") {
-    const pushReviewLine = getShipstampPushReviewHookLine(repoRoot);
+    const pushReviewLine = getGitPreflightPushReviewHookLine(repoRoot);
     ensureHuskyHookAppends(repoRoot, "pre-push", pushReviewLine);
   }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchAuthMutation, fetchAuthQuery, isAuthenticated } from "@/lib/auth-server";
-import { api } from "@shipstamp/convex";
+import { api } from "@gitpreflight/convex";
 import { getResendClient, getResendFromEmail } from "@/lib/resend";
 import { InviteEmail } from "@/emails/InviteEmail";
 
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     await resend.emails.send({
       from,
       to: email,
-      subject: `You're invited to join ${orgName} on Shipstamp`,
+      subject: `You're invited to join ${orgName} on GitPreflight`,
       react: InviteEmail({ orgName, inviteCode: created.code, acceptUrl })
     });
     emailed = true;

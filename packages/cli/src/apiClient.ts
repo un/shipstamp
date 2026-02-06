@@ -9,30 +9,30 @@ export type ApiResult<T> = {
   bodyText: string;
 };
 
-export class ShipstampApiError extends Error {
+export class GitPreflightApiError extends Error {
   readonly status: number;
   readonly bodyText: string;
 
   constructor(message: string, status: number, bodyText: string) {
     super(message);
-    this.name = "ShipstampApiError";
+    this.name = "GitPreflightApiError";
     this.status = status;
     this.bodyText = bodyText;
   }
 }
 
-export type ShipstampApiClientOptions = {
+export type GitPreflightApiClientOptions = {
   baseUrl: string;
   token: string;
   timeoutMs: number;
 };
 
-export class ShipstampApiClient {
+export class GitPreflightApiClient {
   private baseUrl: string;
   private token: string;
   private timeoutMs: number;
 
-  constructor(opts: ShipstampApiClientOptions) {
+  constructor(opts: GitPreflightApiClientOptions) {
     this.baseUrl = opts.baseUrl.replace(/\/$/, "");
     this.token = opts.token;
     this.timeoutMs = opts.timeoutMs;
@@ -55,14 +55,14 @@ export class ShipstampApiClient {
       const text = await res.text();
       if (!res.ok) {
         if (res.status >= 500) {
-          const e = new Error(`Shipstamp API error (${res.status})`) as any;
-          e.name = "ShipstampServerError";
-          e.code = "ESHIPSTAMP_SERVER";
+          const e = new Error(`GitPreflight API error (${res.status})`) as any;
+          e.name = "GitPreflightServerError";
+          e.code = "EGITPREFLIGHT_SERVER";
           e.status = res.status;
           e.bodyText = text;
           throw e;
         }
-        throw new ShipstampApiError(`Shipstamp API error (${res.status})`, res.status, text);
+        throw new GitPreflightApiError(`GitPreflight API error (${res.status})`, res.status, text);
       }
 
       return JSON.parse(text) as T;
@@ -98,15 +98,15 @@ export class ShipstampApiClient {
       if (!res.ok) {
         // v0 policy: treat 5xx as transient (unchecked), but surface 4xx as hard failures.
         if (res.status >= 500) {
-          const e = new Error(`Shipstamp API error (${res.status})`) as any;
-          e.name = "ShipstampServerError";
-          e.code = "ESHIPSTAMP_SERVER";
+          const e = new Error(`GitPreflight API error (${res.status})`) as any;
+          e.name = "GitPreflightServerError";
+          e.code = "EGITPREFLIGHT_SERVER";
           e.status = res.status;
           e.bodyText = text;
           throw e;
         }
 
-        throw new ShipstampApiError(`Shipstamp API error (${res.status})`, res.status, text);
+        throw new GitPreflightApiError(`GitPreflight API error (${res.status})`, res.status, text);
       }
 
       return JSON.parse(text) as T;

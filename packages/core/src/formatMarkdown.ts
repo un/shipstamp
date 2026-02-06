@@ -54,7 +54,7 @@ export function formatReviewResultMarkdown(result: ReviewResult): string {
   const counts = countSeverities(findings);
 
   const out: string[] = [];
-  out.push("# Shipstamp Review");
+  out.push("# GitPreflight Review");
   out.push("");
   out.push(`Result: ${result.status}`);
   out.push(`Counts: note=${counts.note} minor=${counts.minor} major=${counts.major}`);

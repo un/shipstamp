@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-const STORAGE_KEY = "shipstamp.selectedOrgId";
+const STORAGE_KEY = "gitpreflight.selectedOrgId";
 
 export function useSelectedOrg(
   orgs: Array<{ org: { _id: string; name?: string }; role?: string }> | undefined

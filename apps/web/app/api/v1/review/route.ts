@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { z } from "zod";
-import { api } from "@shipstamp/convex";
+import { api } from "@gitpreflight/convex";
 import { reviewWorkflow } from "@/workflows/reviewWorkflow";
 
 export const runtime = "nodejs";
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
           path: "package.json",
           severity: "minor",
           title: "Missing repo identity",
-          message: "Shipstamp requires a git remote named 'origin' to identify the repository (remote.origin.url)."
+          message: "GitPreflight requires a git remote named 'origin' to identify the repository (remote.origin.url)."
         }
       ]
     });
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
   // Until billing is implemented, default to free tier unless explicitly enabled.
   const planTier =
-    parsed.data.planTier === "paid" && process.env.SHIPSTAMP_ENABLE_PAID_TIER === "1" ? "paid" : "free";
+    parsed.data.planTier === "paid" && process.env.GITPREFLIGHT_ENABLE_PAID_TIER === "1" ? "paid" : "free";
 
   // Best-effort: fetch org settings (prompt append).
   let promptAppend = "";
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
             path: "package.json",
             severity: "minor",
             title: "Daily review limit reached",
-            message: `You have reached your daily Shipstamp review limit for ${usage.day} (${limitLabel}).`
+            message: `You have reached your daily GitPreflight review limit for ${usage.day} (${limitLabel}).`
           }
         ]
       });
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
           path: "package.json",
           severity: "note",
           title: "Usage tracking unavailable",
-          message: "Shipstamp could not verify usage limits right now."
+          message: "GitPreflight could not verify usage limits right now."
         }
       ]
     });

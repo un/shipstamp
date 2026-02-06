@@ -1,9 +1,9 @@
 {
-  "name": "shipstamp",
+  "name": "gitpreflight",
   "version": "0.0.0",
-  "description": "Shipstamp CLI installer/wrapper (downloads the platform binary)",
+  "description": "GitPreflight CLI installer/wrapper (downloads the platform binary)",
   "bin": {
-    "shipstamp": "bin/shipstamp.js"
+    "gitpreflight": "bin/gitpreflight.js"
   },
   "files": [
     "bin",

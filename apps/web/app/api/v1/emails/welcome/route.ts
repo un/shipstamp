@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchAuthMutation, fetchAuthQuery, isAuthenticated } from "@/lib/auth-server";
-import { api } from "@shipstamp/convex";
+import { api } from "@gitpreflight/convex";
 import { getResendClient, getResendFromEmail } from "@/lib/resend";
 import { WelcomeEmail } from "@/emails/WelcomeEmail";
 
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   await resend.emails.send({
     from,
     to: email,
-    subject: "Welcome to Shipstamp",
+    subject: "Welcome to GitPreflight",
     react: WelcomeEmail({ name: identity?.name })
   });
 

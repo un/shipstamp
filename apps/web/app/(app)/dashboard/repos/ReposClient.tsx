@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useConvexAuth, useQuery } from "convex/react";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { api } from "@shipstamp/convex";
+import { api } from "@gitpreflight/convex";
 import { useSelectedOrg } from "../useSelectedOrg";
 
 export function ReposClient() {

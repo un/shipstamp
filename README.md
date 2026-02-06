@@ -1,8 +1,8 @@
-# Shipstamp (v0)
+# GitPreflight (v0)
 
 Clean PRs by default. Fix issues at commit time.
 
-Shipstamp is a staged-only, pre-commit code review gate designed for AI coding agents. It runs on `git commit`, reviews the staged diff only (`git diff --cached`), and prints stable Markdown your agent can apply before you push.
+GitPreflight is a staged-only, pre-commit code review gate designed for AI coding agents. It runs on `git commit`, reviews the staged diff only (`git diff --cached`), and prints stable Markdown your agent can apply before you push.
 
 - Runs on `git commit` via a pre-commit hook.
 - Reviews the staged diff only (`git diff --cached`).
@@ -26,15 +26,15 @@ Contributors / source builds:
 Global install via npm (downloads a platform binary on install/first run):
 
 ```bash
-npm i -g shipstamp
-shipstamp --help
+npm i -g gitpreflight
+gitpreflight --help
 ```
 
 Curl install (OpenCode-style):
 
 ```bash
-curl -fsSL https://shipstamp.ai/install | bash
-shipstamp --help
+curl -fsSL https://gitpreflight.ai/install | bash
+gitpreflight --help
 ```
 
 ## Run (web + Convex)
@@ -50,16 +50,16 @@ bun dev
 
 ## Configure
 
-Shipstamp is SaaS-first. You must point the CLI at a Shipstamp API base URL:
+GitPreflight is SaaS-first. You must point the CLI at a GitPreflight API base URL:
 
 ```bash
-export SHIPSTAMP_API_BASE_URL="https://<your-shipstamp-app-domain>"
+export GITPREFLIGHT_API_BASE_URL="https://<your-gitpreflight-app-domain>"
 ```
 
 Authenticate the CLI:
 
 ```bash
-shipstamp auth login
+gitpreflight auth login
 ```
 
 ## Hook setup
@@ -67,24 +67,24 @@ shipstamp auth login
 In a repo you want to protect:
 
 ```bash
-shipstamp init
-# or: shipstamp init --hook pre-push
+gitpreflight init
+# or: gitpreflight init --hook pre-push
 ```
 
-`shipstamp init` is interactive in a TTY and will ask whether you want to run on commit or push.
+`gitpreflight init` is interactive in a TTY and will ask whether you want to run on commit or push.
 
-Shipstamp integrates via Husky:
+GitPreflight integrates via Husky:
 
 - Adds/extends `package.json#scripts.prepare` to include `husky install`
-- Creates/appends `.husky/pre-commit` to run `shipstamp review --staged`
+- Creates/appends `.husky/pre-commit` to run `gitpreflight review --staged`
 - Creates/appends `.husky/post-commit` for unchecked-commit capture
 
 Optional push-gate mode:
 
-- `shipstamp init --hook pre-push` creates/appends `.husky/pre-push` to run `shipstamp review --push`
-- `shipstamp init --hook both` installs both commit + push hooks
+- `gitpreflight init --hook pre-push` creates/appends `.husky/pre-push` to run `gitpreflight review --push`
+- `gitpreflight init --hook both` installs both commit + push hooks
 
-After `shipstamp init`, run your package manager install so Husky activates:
+After `gitpreflight init`, run your package manager install so Husky activates:
 
 ```bash
 npm install
@@ -94,25 +94,25 @@ npm install
 ## Run a review
 
 ```bash
-shipstamp review --staged
+gitpreflight review --staged
 ```
 
-Hooks/CI output is always plain Markdown. In an interactive terminal, Shipstamp prefers a Bun-powered TUI (and falls back to a pager when needed).
+Hooks/CI output is always plain Markdown. In an interactive terminal, GitPreflight prefers a Bun-powered TUI (and falls back to a pager when needed).
 
 Force plain Markdown output:
 
 ```bash
-shipstamp review --staged --plain
+gitpreflight review --staged --plain
 # or
-SHIPSTAMP_UI=plain shipstamp review --staged
+GITPREFLIGHT_UI=plain gitpreflight review --staged
 ```
 
 ## Unchecked policy (offline/timeout)
 
-If Shipstamp cannot complete a review (network/timeout/server issues):
+If GitPreflight cannot complete a review (network/timeout/server issues):
 
 - The commit is allowed.
-- The commit is marked as `UNCHECKED` locally under `.git/shipstamp/`.
+- The commit is marked as `UNCHECKED` locally under `.git/gitpreflight/`.
 - The next run on the same branch is blocked until the backlog is cleared or explicitly bypassed.
 
 ## Bypass
@@ -120,7 +120,7 @@ If Shipstamp cannot complete a review (network/timeout/server issues):
 - One-shot bypass (preferred):
 
 ```bash
-shipstamp skip-next --reason "<why>"
+gitpreflight skip-next --reason "<why>"
 ```
 
 - Universal bypass:
@@ -133,7 +133,7 @@ git push --no-verify
 
 ## Privacy stance
 
-Shipstamp avoids storing customer repo source code at rest.
+GitPreflight avoids storing customer repo source code at rest.
 
 - The server stores:
   - instruction file contents (by hash) when configured (e.g. `AGENTS.md`)
@@ -144,7 +144,7 @@ Shipstamp avoids storing customer repo source code at rest.
 
 Official installs ship SaaS mode only; source-only features (like local-agent mode) are compile-time disabled in official builds.
 
-To run against a locally running Shipstamp service, build/run from source and point `SHIPSTAMP_API_BASE_URL` at localhost.
+To run against a locally running GitPreflight service, build/run from source and point `GITPREFLIGHT_API_BASE_URL` at localhost.
 
 ```bash
 cd code
@@ -160,11 +160,11 @@ bun packages/cli/src/index.ts review --staged
 
 ## Source-only local-agent mode
 
-Local-agent mode shells out to a user-provided command and expects Shipstamp Markdown output.
+Local-agent mode shells out to a user-provided command and expects GitPreflight Markdown output.
 
 Use it with:
 
 ```bash
-export SHIPSTAMP_LOCAL_AGENT_COMMAND="<command that reads prompt from stdin>"
+export GITPREFLIGHT_LOCAL_AGENT_COMMAND="<command that reads prompt from stdin>"
 bun packages/cli/src/index.ts review --staged --local-agent
 ```

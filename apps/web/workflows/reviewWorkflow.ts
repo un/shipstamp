@@ -1,4 +1,4 @@
-import type { Finding, ReviewResult } from "@shipstamp/core";
+import type { Finding, ReviewResult } from "@gitpreflight/core";
 import { sleep } from "workflow";
 
 import { defaultFreeTierModel, defaultPaidTierModels, type ModelSpec } from "@/lib/ai/providers";

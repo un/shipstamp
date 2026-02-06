@@ -41,7 +41,7 @@ async function sha256File(absPath: string): Promise<string> {
 async function main() {
   const argv = process.argv.slice(2);
 
-  const version = process.env.SHIPSTAMP_VERSION?.trim() || "0.0.0";
+  const version = process.env.GITPREFLIGHT_VERSION?.trim() || "0.0.0";
   const official = hasFlag(argv, "--official");
 
   const outDir = resolve(parseArgValue(argv, "--outdir") ?? "dist/release");
@@ -69,12 +69,12 @@ async function main() {
   const build = Bun.spawnSync({
     cmd: ["bun", "run", buildCmd],
     cwd: resolve("packages/cli"),
-    env: { ...process.env, SHIPSTAMP_VERSION: version },
+    env: { ...process.env, GITPREFLIGHT_VERSION: version },
     stdout: "inherit",
     stderr: "inherit"
   });
   if (build.exitCode !== 0) {
-    throw new Error(`Failed to build @shipstamp/cli (${buildCmd})`);
+    throw new Error(`Failed to build @gitpreflight/cli (${buildCmd})`);
   }
 
   const entry = resolve("packages/cli/dist/index.js");
@@ -83,7 +83,7 @@ async function main() {
   // 2) Compile per target.
   for (const t of targetKeys) {
     const { bunTarget, platform, arch } = TARGETS[t];
-    const filename = `shipstamp-v${version}-${platform}-${arch}`;
+    const filename = `gitpreflight-v${version}-${platform}-${arch}`;
     const outFile = join(outDir, filename);
 
     const res = Bun.spawnSync({
