@@ -10,9 +10,9 @@ const DEFAULT_INSTRUCTION_FILES = [
   ".cursorrules"
 ];
 
-const ShipstampConfigSchema = z
+const GitPreflightConfigSchema = z
   .object({
-    // apiBaseUrl is intentionally NOT supported in v0; use env SHIPSTAMP_API_BASE_URL.
+    // apiBaseUrl is intentionally NOT supported in v0; use env GITPREFLIGHT_API_BASE_URL.
     apiBaseUrl: z.never().optional(),
     instructionFiles: z.array(z.string().min(1)).optional(),
     timeoutMs: z.number().int().positive().optional(),
@@ -27,11 +27,11 @@ const ShipstampConfigSchema = z
 
 const PackageJsonSchema = z
   .object({
-    shipstamp: ShipstampConfigSchema.optional()
+    gitpreflight: GitPreflightConfigSchema.optional()
   })
   .passthrough();
 
-export type ShipstampRepoConfig = {
+export type GitPreflightRepoConfig = {
   instructionFiles: string[];
   timeoutMs: number;
   linters: {
@@ -40,14 +40,14 @@ export type ShipstampRepoConfig = {
   };
 };
 
-export function loadShipstampRepoConfig(repoRoot: string): ShipstampRepoConfig {
+export function loadGitPreflightRepoConfig(repoRoot: string): GitPreflightRepoConfig {
   const packageJsonPath = join(repoRoot, "package.json");
 
   let raw: unknown;
   try {
     raw = JSON.parse(readFileSync(packageJsonPath, "utf8"));
   } catch {
-    throw new Error(`Failed to read ${packageJsonPath}. Shipstamp expects a package.json at the repo root.`);
+    throw new Error(`Failed to read ${packageJsonPath}. GitPreflight expects a package.json at the repo root.`);
   }
 
   const parsed = PackageJsonSchema.safeParse(raw);
@@ -55,13 +55,13 @@ export function loadShipstampRepoConfig(repoRoot: string): ShipstampRepoConfig {
     throw new Error(`Invalid ${packageJsonPath}: ${parsed.error.message}`);
   }
 
-  const cfg = parsed.data.shipstamp ?? {};
+  const cfg = parsed.data.gitpreflight ?? {};
 
   // If someone still has apiBaseUrl set, produce a clearer error.
   // (The schema already rejects it, but this message is friendlier.)
-  if ((raw as any)?.shipstamp?.apiBaseUrl != null) {
+  if ((raw as any)?.gitpreflight?.apiBaseUrl != null) {
     throw new Error(
-      "package.json: shipstamp.apiBaseUrl is not supported. Set SHIPSTAMP_API_BASE_URL in your environment instead."
+      "package.json: gitpreflight.apiBaseUrl is not supported. Set GITPREFLIGHT_API_BASE_URL in your environment instead."
     );
   }
 

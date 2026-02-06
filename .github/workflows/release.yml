@@ -38,11 +38,11 @@ jobs:
       - name: Build binary
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          SHIPSTAMP_VERSION="$VERSION" bun scripts/build-release-assets.ts --official --targets=${{ matrix.target }} --outdir dist/release/${{ matrix.target }}
+          GITPREFLIGHT_VERSION="$VERSION" bun scripts/build-release-assets.ts --official --targets=${{ matrix.target }} --outdir dist/release/${{ matrix.target }}
 
       - uses: actions/upload-artifact@v4
         with:
-          name: shipstamp-${{ matrix.target }}
+          name: gitpreflight-${{ matrix.target }}
           path: dist/release/${{ matrix.target }}/*
 
   github-release:
@@ -58,15 +58,15 @@ jobs:
       - name: Collect assets + checksums
         run: |
           mkdir -p dist/release
-          find dist/artifacts -maxdepth 4 -type f -name 'shipstamp-v*' -print -exec cp '{}' dist/release/ ';'
+          find dist/artifacts -maxdepth 4 -type f -name 'gitpreflight-v*' -print -exec cp '{}' dist/release/ ';'
           cd dist/release
-          sha256sum shipstamp-v* | awk '{print $1"  "$2}' > checksums.txt
+          sha256sum gitpreflight-v* | awk '{print $1"  "$2}' > checksums.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/release/shipstamp-v*
+            dist/release/gitpreflight-v*
             dist/release/checksums.txt
 
   npm-publish:
@@ -87,12 +87,12 @@ jobs:
       - name: Set package version
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          cd packages/shipstamp
+          cd packages/gitpreflight
           npm version "$VERSION" --no-git-tag-version
 
       - name: Publish
         run: |
-          cd packages/shipstamp
+          cd packages/gitpreflight
           npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

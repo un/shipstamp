@@ -1,4 +1,4 @@
-import type { Finding, Severity } from "@shipstamp/core";
+import type { Finding, Severity } from "@gitpreflight/core";
 
 const SEV_RANK: Record<Severity, number> = { note: 0, minor: 1, major: 2 };
 

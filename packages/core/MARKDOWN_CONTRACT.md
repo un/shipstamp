@@ -1,6 +1,6 @@
-# Shipstamp Markdown Output Contract (v0)
+# GitPreflight Markdown Output Contract (v0)
 
-This document defines the stable Markdown format that Shipstamp prints from `shipstamp review --staged`.
+This document defines the stable Markdown format that GitPreflight prints from `gitpreflight review --staged`.
 It is designed to be:
 
 - Deterministic and easy to parse.
@@ -16,7 +16,7 @@ It is designed to be:
 ## Output skeleton
 
 ```md
-# Shipstamp Review
+# GitPreflight Review
 
 Result: PASS
 Counts: note=0 minor=0 major=0

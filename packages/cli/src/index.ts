@@ -1,4 +1,4 @@
-import { formatReviewResultMarkdown, SHIPSTAMP_CORE_VERSION } from "@shipstamp/core";
+import { formatReviewResultMarkdown, GITPREFLIGHT_CORE_VERSION } from "@gitpreflight/core";
 import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
@@ -10,7 +10,7 @@ import {
   getRepoRoot,
   normalizeOriginUrl
 } from "./git";
-import { loadShipstampRepoConfig } from "./repoConfig";
+import { loadGitPreflightRepoConfig } from "./repoConfig";
 import { collectStagedFiles } from "./staged";
 import { collectStagedPatch } from "./stagedPatch";
 import { discoverInstructionFiles } from "./instructions";
@@ -24,7 +24,7 @@ import {
   writeSkipNext
 } from "./state";
 import { repoHasExistingPrecommitLinting } from "./precommitDetection";
-import { getShipstampEnv } from "./env";
+import { getGitPreflightEnv } from "./env";
 import { detectLinters } from "./lintersDetect";
 import { selectStagedFilesForLinters } from "./linterFiles";
 import { detectPackageManager } from "./packageManager";
@@ -36,19 +36,19 @@ import { deviceAuthLogin } from "./deviceAuth";
 import { loadToken } from "./token";
 import { readTextFile } from "./files";
 import { loadRepoEnv } from "./dotenvFile";
-import { ShipstampApiClient, ShipstampApiError } from "./apiClient";
-import { assertSourceBuild, SHIPSTAMP_OFFICIAL_BUILD } from "./buildFlags";
-import { emitMarkdown, resolveShipstampUi } from "./ui";
-import { SHIPSTAMP_CLI_VERSION } from "./version";
+import { GitPreflightApiClient, GitPreflightApiError } from "./apiClient";
+import { assertSourceBuild, GITPREFLIGHT_OFFICIAL_BUILD } from "./buildFlags";
+import { emitMarkdown, resolveGitPreflightUi } from "./ui";
+import { GITPREFLIGHT_CLI_VERSION } from "./version";
 import { collectPushReviewInputFromHook, parsePrePushStdin } from "./pushReview";
 
 function printHelp() {
   process.stdout.write(
     [
-      `shipstamp ${SHIPSTAMP_CLI_VERSION} — core ${SHIPSTAMP_CORE_VERSION}`,
+      `gitpreflight ${GITPREFLIGHT_CLI_VERSION} — core ${GITPREFLIGHT_CORE_VERSION}`,
       "",
       "Usage:",
-      "  shipstamp <command> [options]",
+      "  gitpreflight <command> [options]",
       "",
       "Commands:",
       "  review --staged        Review staged changes",
@@ -66,7 +66,7 @@ function printHelp() {
 }
 
 function printVersion() {
-  process.stdout.write(`${SHIPSTAMP_CLI_VERSION}\n`);
+  process.stdout.write(`${GITPREFLIGHT_CLI_VERSION}\n`);
 }
 
 function unknownCommand(cmd: string | undefined) {
@@ -95,8 +95,8 @@ async function cmdReview(argv: string[]) {
   });
 
   if (parsed.values.help) {
-    const localAgent = SHIPSTAMP_OFFICIAL_BUILD ? "" : " [--local-agent]";
-    process.stdout.write(`Usage: shipstamp review (--staged|--push)${localAgent} [--tui|--plain]\n`);
+    const localAgent = GITPREFLIGHT_OFFICIAL_BUILD ? "" : " [--local-agent]";
+    process.stdout.write(`Usage: gitpreflight review (--staged|--push)${localAgent} [--tui|--plain]\n`);
     return 0;
   }
 
@@ -131,7 +131,7 @@ async function cmdReview(argv: string[]) {
   const pushStdin = (() => {
     if (mode !== "push") return "";
     if (process.stdin.isTTY) return "";
-    const probablyInHook = process.env.SHIPSTAMP_HOOK === "1" || Boolean(process.env.GIT_DIR) || pushArgs.length > 0;
+    const probablyInHook = process.env.GITPREFLIGHT_HOOK === "1" || Boolean(process.env.GIT_DIR) || pushArgs.length > 0;
     if (!probablyInHook) return "";
     try {
       return readFileSync(0, "utf8");
@@ -155,9 +155,9 @@ async function cmdReview(argv: string[]) {
 
   const env = process.env;
   const inCi = env.CI === "1" || env.CI === "true" || env.GITHUB_ACTIONS === "1" || env.GITHUB_ACTIONS === "true";
-  const inHook = env.SHIPSTAMP_HOOK === "1" || Boolean(env.GIT_DIR);
+  const inHook = env.GITPREFLIGHT_HOOK === "1" || Boolean(env.GIT_DIR);
   const stdoutIsTty = Boolean(process.stdout.isTTY);
-  const ui = resolveShipstampUi({
+  const ui = resolveGitPreflightUi({
     inCi,
     inHook,
     stdoutIsTty,
@@ -179,8 +179,8 @@ async function cmdReview(argv: string[]) {
         {
           path: "package.json",
           severity: "note",
-          title: "Shipstamp skipped",
-          message: `Shipstamp skipped this run (skip-next). Reason: ${skip.reason}`
+          title: "GitPreflight skipped",
+          message: `GitPreflight skipped this run (skip-next). Reason: ${skip.reason}`
         }
       ]
     });
@@ -201,12 +201,12 @@ async function cmdReview(argv: string[]) {
           title: "Unchecked backlog on this branch",
           message:
             (mode === "push"
-              ? "Shipstamp previously allowed one or more pushes without a completed review (offline/timeout).\n\n"
-              : "Shipstamp previously allowed one or more commits without a completed review (offline/timeout).\n\n") +
+              ? "GitPreflight previously allowed one or more pushes without a completed review (offline/timeout).\n\n"
+              : "GitPreflight previously allowed one or more commits without a completed review (offline/timeout).\n\n") +
             "Unchecked commits:\n" +
             `${list}\n\n` +
             "To proceed, either:\n" +
-            "- Run `shipstamp skip-next --reason \"...\"` to bypass once, or\n" +
+            "- Run `gitpreflight skip-next --reason \"...\"` to bypass once, or\n" +
             (mode === "push" ? "- Use `git push --no-verify` to bypass hooks\n" : "- Use `git commit --no-verify` to bypass hooks\n")
         }
       ]
@@ -216,7 +216,7 @@ async function cmdReview(argv: string[]) {
   }
 
   try {
-    const repoConfig = loadShipstampRepoConfig(repoRoot);
+    const repoConfig = loadGitPreflightRepoConfig(repoRoot);
     const useLocalAgent = Boolean((parsed.values as any)["local-agent"]);
 
     const reviewInput =
@@ -249,14 +249,14 @@ async function cmdReview(argv: string[]) {
 
     const pm = detectPackageManager(repoRoot);
 
-    let findings: Array<import("@shipstamp/core").Finding> = [];
+    let findings: Array<import("@gitpreflight/core").Finding> = [];
 
-    if (SHIPSTAMP_OFFICIAL_BUILD && useLocalAgent) {
+    if (GITPREFLIGHT_OFFICIAL_BUILD && useLocalAgent) {
       findings.push({
         path: "package.json",
         severity: "minor",
         title: "Local-agent mode disabled",
-        message: "Local-agent mode is disabled in official Shipstamp builds. Build from source to enable source-only features."
+        message: "Local-agent mode is disabled in official GitPreflight builds. Build from source to enable source-only features."
       });
 
       const md = formatReviewResultMarkdown({ status: "FAIL", findings });
@@ -270,16 +270,16 @@ async function cmdReview(argv: string[]) {
     let apiBaseUrl: string | null = null;
     if (!useLocalAgent) {
       try {
-        apiBaseUrl = getShipstampEnv(mergedEnv).SHIPSTAMP_API_BASE_URL;
+        apiBaseUrl = getGitPreflightEnv(mergedEnv).GITPREFLIGHT_API_BASE_URL;
       } catch (err) {
         findings.push({
           path: "package.json",
           severity: "minor",
           title: "Missing required environment",
           message:
-            "Shipstamp needs SHIPSTAMP_API_BASE_URL to contact the Shipstamp API (separate app/domain).\n\n" +
+            "GitPreflight needs GITPREFLIGHT_API_BASE_URL to contact the GitPreflight API (separate app/domain).\n\n" +
             "Set it in your environment, e.g.:\n\n" +
-            "`export SHIPSTAMP_API_BASE_URL=https://api.shipstamp.example`\n\n" +
+            "`export GITPREFLIGHT_API_BASE_URL=https://api.gitpreflight.example`\n\n" +
             `Error: ${(err as Error).message}`
         });
       }
@@ -294,14 +294,14 @@ async function cmdReview(argv: string[]) {
           path: "package.json",
           severity: "minor",
           title: "Not authenticated",
-          message: "Run `shipstamp auth login` to authenticate the CLI."
+              message: "Run `gitpreflight auth login` to authenticate the CLI."
         });
       }
 
       if (token) {
         // Best-effort: pull org-managed instruction filenames.
         try {
-          const apiClient = new ShipstampApiClient({ baseUrl: apiBaseUrl, token, timeoutMs: repoConfig.timeoutMs });
+          const apiClient = new GitPreflightApiClient({ baseUrl: apiBaseUrl, token, timeoutMs: repoConfig.timeoutMs });
           const settings = await apiClient.getJson<{ instructionFilenames?: string[] }>("/api/v1/orgs/settings");
           if (Array.isArray(settings.instructionFilenames) && settings.instructionFilenames.length > 0) {
             instructionFilenames = settings.instructionFilenames;
@@ -318,7 +318,7 @@ async function cmdReview(argv: string[]) {
             severity: "minor",
             title: "Missing git remote origin",
             message:
-              "Shipstamp identifies repositories by `remote.origin.url`. Configure a remote named `origin` (e.g. `git remote add origin ...`) and try again."
+              "GitPreflight identifies repositories by `remote.origin.url`. Configure a remote named `origin` (e.g. `git remote add origin ...`) and try again."
           });
         }
 
@@ -384,7 +384,7 @@ async function cmdReview(argv: string[]) {
       return 1;
     }
 
-    if (!SHIPSTAMP_OFFICIAL_BUILD && useLocalAgent) {
+    if (!GITPREFLIGHT_OFFICIAL_BUILD && useLocalAgent) {
       try {
         assertSourceBuild("Local-agent mode");
       } catch (err) {
@@ -396,16 +396,16 @@ async function cmdReview(argv: string[]) {
         });
       }
 
-      const cmd = mergedEnv.SHIPSTAMP_LOCAL_AGENT_COMMAND;
+      const cmd = mergedEnv.GITPREFLIGHT_LOCAL_AGENT_COMMAND;
       if (!cmd || cmd.trim().length === 0) {
         findings.push({
           path: ".env.local",
           severity: "minor",
           title: "Missing local agent command",
           message:
-            "Set SHIPSTAMP_LOCAL_AGENT_COMMAND to a command that reads the prompt from stdin and prints Shipstamp Markdown to stdout.\n\n" +
+            "Set GITPREFLIGHT_LOCAL_AGENT_COMMAND to a command that reads the prompt from stdin and prints GitPreflight Markdown to stdout.\n\n" +
             "Example:\n\n" +
-            "`export SHIPSTAMP_LOCAL_AGENT_COMMAND=\"opencode run\"`"
+            "`export GITPREFLIGHT_LOCAL_AGENT_COMMAND=\"opencode run\"`"
         });
       }
 
@@ -424,9 +424,9 @@ async function cmdReview(argv: string[]) {
         .join("\n\n");
 
       const prompt =
-        `You are Shipstamp in local-agent mode. Review ONLY the ${mode === "push" ? "push" : "staged"} patch.\n` +
-        "Output MUST follow the Shipstamp Markdown contract:\n" +
-        "- Start with '# Shipstamp Review'\n" +
+        `You are GitPreflight in local-agent mode. Review ONLY the ${mode === "push" ? "push" : "staged"} patch.\n` +
+        "Output MUST follow the GitPreflight Markdown contract:\n" +
+        "- Start with '# GitPreflight Review'\n" +
         "- Include 'Result: PASS|FAIL|UNCHECKED'\n" +
         "- Include 'Counts: note=<n> minor=<n> major=<n>'\n" +
         "- Include '## Findings' grouped by file\n" +
@@ -480,7 +480,7 @@ async function cmdReview(argv: string[]) {
         if (originUrl && normalizedOriginUrl) {
           // Best-effort: register the repo (non-blocking).
           try {
-            const apiClient = new ShipstampApiClient({ baseUrl: apiBaseUrl, token, timeoutMs: repoConfig.timeoutMs });
+            const apiClient = new GitPreflightApiClient({ baseUrl: apiBaseUrl, token, timeoutMs: repoConfig.timeoutMs });
             await apiClient.postJson<{ repoId: string }>("/api/v1/repos/register", {
               originUrl,
               normalizedOriginUrl,
@@ -491,9 +491,9 @@ async function cmdReview(argv: string[]) {
           }
         }
 
-        const apiClient = new ShipstampApiClient({ baseUrl: apiBaseUrl, token, timeoutMs: repoConfig.timeoutMs });
+        const apiClient = new GitPreflightApiClient({ baseUrl: apiBaseUrl, token, timeoutMs: repoConfig.timeoutMs });
         try {
-          const remote = await apiClient.postJson<import("@shipstamp/core").ReviewResult>("/api/v1/review", {
+          const remote = await apiClient.postJson<import("@gitpreflight/core").ReviewResult>("/api/v1/review", {
             originUrl: originUrl ?? undefined,
             normalizedOriginUrl: normalizedOriginUrl ?? undefined,
             branch,
@@ -541,8 +541,8 @@ async function cmdReview(argv: string[]) {
                         title: "Unchecked review",
                         message:
                           mode === "push"
-                            ? "Shipstamp could not complete the review. Push is allowed, but Shipstamp will require reviewing these commits before the next push on this branch."
-                            : "Shipstamp could not complete the review. Commit is allowed, but Shipstamp will require reviewing this commit before the next commit on this branch."
+                            ? "GitPreflight could not complete the review. Push is allowed, but GitPreflight will require reviewing these commits before the next push on this branch."
+                            : "GitPreflight could not complete the review. Commit is allowed, but GitPreflight will require reviewing this commit before the next commit on this branch."
                       }
                     ]
             });
@@ -552,12 +552,12 @@ async function cmdReview(argv: string[]) {
 
           findings = findings.concat(remote.findings);
         } catch (err) {
-          if (err instanceof ShipstampApiError && err.status === 401) {
+          if (err instanceof GitPreflightApiError && err.status === 401) {
             findings.push({
               path: "package.json",
               severity: "minor",
               title: "Authentication failed",
-              message: "Shipstamp API rejected your token. Run `shipstamp auth login` to re-authenticate."
+              message: "GitPreflight API rejected your token. Run `gitpreflight auth login` to re-authenticate."
             });
           } else {
             throw err;
@@ -610,8 +610,8 @@ async function cmdReview(argv: string[]) {
             title: "Unchecked review",
             message:
               mode === "push"
-                ? "Shipstamp could not complete the review (offline/timeout). Push is allowed, but Shipstamp will require reviewing these commits before the next push on this branch."
-                : "Shipstamp could not complete the review (offline/timeout). Commit is allowed, but Shipstamp will require reviewing this commit before the next commit on this branch."
+                ? "GitPreflight could not complete the review (offline/timeout). Push is allowed, but GitPreflight will require reviewing these commits before the next push on this branch."
+                : "GitPreflight could not complete the review (offline/timeout). Commit is allowed, but GitPreflight will require reviewing this commit before the next commit on this branch."
           }
         ]
       });
@@ -619,7 +619,7 @@ async function cmdReview(argv: string[]) {
       return 0;
     }
 
-    process.stderr.write(`Shipstamp internal error: ${(err as Error).message}\n`);
+    process.stderr.write(`GitPreflight internal error: ${(err as Error).message}\n`);
     return 2;
   }
 }
@@ -635,7 +635,7 @@ async function cmdInit(argv: string[]) {
   });
 
   if (parsed.values.help) {
-    process.stdout.write("Usage: shipstamp init [--hook pre-commit|pre-push|both]\n");
+    process.stdout.write("Usage: gitpreflight init [--hook pre-commit|pre-push|both]\n");
     return 0;
   }
 
@@ -650,7 +650,7 @@ async function cmdInit(argv: string[]) {
     try {
       process.stdout.write(
         [
-          "How do you want Shipstamp to run?",
+          "How do you want GitPreflight to run?",
           "  1) On commit (pre-commit) [recommended]",
           "  2) On push (pre-push)",
           "  3) Both",
@@ -695,11 +695,11 @@ async function cmdInit(argv: string[]) {
   try {
     initRepo(repoRoot, { hook: selectedHookMode });
   } catch (err) {
-    process.stderr.write(`Failed to initialize Shipstamp: ${(err as Error).message}\n`);
+    process.stderr.write(`Failed to initialize GitPreflight: ${(err as Error).message}\n`);
     return 2;
   }
 
-  process.stdout.write("Initialized Shipstamp (Husky hooks + package.json updates).\n");
+  process.stdout.write("Initialized GitPreflight (Husky hooks + package.json updates).\n");
   process.stdout.write("Next: run your package manager install so the prepare script can run `husky install`.\n");
   return 0;
 }
@@ -716,7 +716,7 @@ async function cmdAuth(argv: string[]) {
     });
 
     if (parsed.values.help) {
-      process.stdout.write("Usage: shipstamp auth login\n");
+      process.stdout.write("Usage: gitpreflight auth login\n");
       return 0;
     }
 
@@ -729,9 +729,9 @@ async function cmdAuth(argv: string[]) {
         // auth login can run outside a repo; fall back to process env
       }
 
-      const parsedEnv = getShipstampEnv(env);
-      await deviceAuthLogin(parsedEnv.SHIPSTAMP_API_BASE_URL);
-      process.stdout.write("Shipstamp CLI authenticated.\n");
+      const parsedEnv = getGitPreflightEnv(env);
+      await deviceAuthLogin(parsedEnv.GITPREFLIGHT_API_BASE_URL);
+      process.stdout.write("GitPreflight CLI authenticated.\n");
       return 0;
     } catch (err) {
       process.stderr.write(`Auth failed: ${(err as Error).message}\n`);
@@ -739,7 +739,7 @@ async function cmdAuth(argv: string[]) {
     }
   }
 
-  process.stderr.write("Usage: shipstamp auth login\n");
+  process.stderr.write("Usage: gitpreflight auth login\n");
   return 2;
 }
 
@@ -757,7 +757,7 @@ async function cmdInternal(argv: string[]) {
     return runPostCommit(repoRoot);
   }
 
-  process.stderr.write("Usage: shipstamp internal post-commit\n");
+  process.stderr.write("Usage: gitpreflight internal post-commit\n");
   return 2;
 }
 
@@ -772,7 +772,7 @@ async function cmdSkipNext(argv: string[]) {
   });
 
   if (parsed.values.help) {
-    process.stdout.write("Usage: shipstamp skip-next --reason \"...\"\n");
+    process.stdout.write("Usage: gitpreflight skip-next --reason \"...\"\n");
     return 0;
   }
 
@@ -787,7 +787,7 @@ async function cmdSkipNext(argv: string[]) {
   }
 
   writeSkipNext(repoRoot, { reason, createdAtMs: Date.now() });
-  process.stdout.write(`Shipstamp will skip the next hook run. Reason: ${reason}\n`);
+  process.stdout.write(`GitPreflight will skip the next hook run. Reason: ${reason}\n`);
   return 0;
 }
 

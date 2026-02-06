@@ -1,4 +1,4 @@
-import type { Finding } from "@shipstamp/core";
+import type { Finding } from "@gitpreflight/core";
 
 import { ModelOutputSchema } from "./modelSchemas";
 

@@ -3,7 +3,7 @@ import { buttonVariants } from "@/components/ui/button-variants";
 import { isAuthenticated } from "@/lib/auth-server";
 import { cn } from "@/lib/utils";
 
-const GITHUB_REPO_URL = "https://github.com/un/shipstamp";
+const GITHUB_REPO_URL = "https://github.com/un/gitpreflight";
 const NOISE_DATA_URL =
   "data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A//www.w3.org/2000/svg'%20width%3D'128'%20height%3D'128'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'.8'%20numOctaves%3D'3'%20stitchTiles%3D'stitch'/%3E%3C/filter%3E%3Crect%20width%3D'128'%20height%3D'128'%20filter%3D'url(%23n)'%20opacity%3D'.4'/%3E%3C/svg%3E";
 
@@ -36,7 +36,7 @@ export default async function MarketingLayout({
       <header className="sticky top-0 z-50 border-b bg-background/90 backdrop-blur">
         <div className="mx-auto flex w-full max-w-[78ch] items-center justify-between gap-4 px-6 py-3">
           <Link href="/" className="text-sm font-semibold tracking-tight">
-            shipstamp
+            gitpreflight
           </Link>
 
           <nav aria-label="Sections" className="hidden items-center gap-1 text-sm sm:flex">
@@ -116,7 +116,7 @@ export default async function MarketingLayout({
       <footer className="border-t">
         <div className="mx-auto w-full max-w-[78ch] px-6 py-8 text-xs text-muted-foreground">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>Shipstamp</div>
+            <div>GitPreflight</div>
             <div className="flex flex-wrap items-center gap-3">
               <a
                 href={GITHUB_REPO_URL}

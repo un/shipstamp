@@ -8,7 +8,7 @@
 
 ## Privacy stance (bullets)
 
-- Shipstamp avoids storing customer repo source code at rest.
+- GitPreflight avoids storing customer repo source code at rest.
 - The server stores instruction file contents (by hash) when configured (e.g. `AGENTS.md`).
 - The server stores review outputs and aggregated usage/statistics.
 - The server does not store arbitrary repo files.

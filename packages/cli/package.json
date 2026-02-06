@@ -1,5 +1,5 @@
 {
-  "name": "@shipstamp/cli",
+  "name": "@gitpreflight/cli",
   "version": "0.0.0",
   "private": true,
   "main": "dist/index.js",
@@ -8,14 +8,14 @@
     "dist"
   ],
   "dependencies": {
-    "@shipstamp/core": "workspace:*",
+    "@gitpreflight/core": "workspace:*",
     "@t3-oss/env-core": "^0.13.8",
     "@opentui/core": "^0.1.77",
     "zod": "^3.24.2"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format cjs --dts --sourcemap --clean --define.__SHIPSTAMP_OFFICIAL_BUILD__=false --define.__SHIPSTAMP_CLI_VERSION__=$(node -p \"JSON.stringify(process.env.SHIPSTAMP_VERSION || '0.0.0')\")",
-    "build:official": "tsup src/index.ts --format cjs --dts --sourcemap --clean --define.__SHIPSTAMP_OFFICIAL_BUILD__=true --define.__SHIPSTAMP_CLI_VERSION__=$(node -p \"JSON.stringify(process.env.SHIPSTAMP_VERSION || '0.0.0')\")",
+    "build": "tsup src/index.ts --format cjs --dts --sourcemap --clean --define.__GITPREFLIGHT_OFFICIAL_BUILD__=false --define.__GITPREFLIGHT_CLI_VERSION__=$(node -p \"JSON.stringify(process.env.GITPREFLIGHT_VERSION || '0.0.0')\")",
+    "build:official": "tsup src/index.ts --format cjs --dts --sourcemap --clean --define.__GITPREFLIGHT_OFFICIAL_BUILD__=true --define.__GITPREFLIGHT_CLI_VERSION__=$(node -p \"JSON.stringify(process.env.GITPREFLIGHT_VERSION || '0.0.0')\")",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import type { Finding } from "@shipstamp/core";
+import type { Finding } from "@gitpreflight/core";
 
 import type { LintersDetection } from "./lintersDetect";
 import type { PackageManager } from "./packageManager";

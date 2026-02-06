@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Shipstamp",
+  title: "GitPreflight",
   description: "Staged-only pre-commit reviews for AI coding agents. Fix issues at commit time. Clean PRs by default.",
 };
 

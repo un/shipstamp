@@ -2,8 +2,8 @@
 
 set -eu
 
-REPO="${SHIPSTAMP_GITHUB_REPO:-un/shipstamp}"
-INSTALL_DIR="${SHIPSTAMP_INSTALL_DIR:-${HOME}/.local/bin}"
+REPO="${GITPREFLIGHT_GITHUB_REPO:-un/gitpreflight}"
+INSTALL_DIR="${GITPREFLIGHT_INSTALL_DIR:-${HOME}/.local/bin}"
 
 say() { printf '%s\n' "$*"; }
 die() { printf '%s\n' "$*" >&2; exit 1; }
@@ -32,7 +32,7 @@ case "$ARCH" in
   *) die "Unsupported arch: $ARCH (supported: x64, arm64)" ;;
 esac
 
-VERSION="${SHIPSTAMP_INSTALL_VERSION:-}"
+VERSION="${GITPREFLIGHT_INSTALL_VERSION:-}"
 if [ -z "$VERSION" ]; then
   # Resolve latest tag via GitHub redirect.
   VERSION="$(curl -fsSLI "https://github.com/${REPO}/releases/latest" \
@@ -41,24 +41,24 @@ if [ -z "$VERSION" ]; then
 fi
 
 if [ -z "$VERSION" ]; then
-  die "Failed to resolve latest Shipstamp version (set SHIPSTAMP_INSTALL_VERSION to pin)"
+  die "Failed to resolve latest GitPreflight version (set GITPREFLIGHT_INSTALL_VERSION to pin)"
 fi
 
-ASSET="shipstamp-${VERSION}-${PLATFORM}-${CPU}"
+ASSET="gitpreflight-${VERSION}-${PLATFORM}-${CPU}"
 BASE_URL="https://github.com/${REPO}/releases/download/${VERSION}"
 ASSET_URL="${BASE_URL}/${ASSET}"
 CHECKSUMS_URL="${BASE_URL}/checksums.txt"
 
 TMP_DIR="${TMPDIR:-/tmp}"
-TMP_BIN="${TMP_DIR}/shipstamp.$$"
-TMP_SUMS="${TMP_DIR}/shipstamp-checksums.$$"
+TMP_BIN="${TMP_DIR}/gitpreflight.$$"
+TMP_SUMS="${TMP_DIR}/gitpreflight-checksums.$$"
 
 cleanup() {
   rm -f "$TMP_BIN" "$TMP_SUMS" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
 
-say "Shipstamp: downloading ${ASSET}..."
+say "GitPreflight: downloading ${ASSET}..."
 curl -fsSL "$ASSET_URL" -o "$TMP_BIN"
 curl -fsSL "$CHECKSUMS_URL" -o "$TMP_SUMS"
 
@@ -83,14 +83,14 @@ fi
 mkdir -p "$INSTALL_DIR"
 chmod 755 "$TMP_BIN"
 
-DEST="${INSTALL_DIR}/shipstamp"
+DEST="${INSTALL_DIR}/gitpreflight"
 mv "$TMP_BIN" "$DEST"
 chmod 755 "$DEST"
 
-say "Shipstamp installed to: ${DEST}"
+say "GitPreflight installed to: ${DEST}"
 say ""
 say "Next:"
-say "  shipstamp --help"
+say "  gitpreflight --help"
 say ""
-say "If 'shipstamp' is not found, add this to your shell profile:"
+say "If 'gitpreflight' is not found, add this to your shell profile:"
 say "  export PATH=\"${INSTALL_DIR}:\$PATH\""

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import styles from "./marketing.module.css";
 
 const MARKDOWN_CONTRACT_EXCERPT = [
-  "# Shipstamp Review",
+  "# GitPreflight Review",
   "",
   "Result: PASS",
   "Counts: note=0 minor=0 major=0",
@@ -35,10 +35,10 @@ export default async function Home() {
   return (
     <div className={cn("flex flex-col gap-10", styles.reveal)}>
       <section aria-label="Hero" className="pt-2">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Shipstamp</h1>
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">GitPreflight</h1>
         <p className="mt-4 text-sm text-muted-foreground">Clean PRs by default. Fix issues at commit time.</p>
         <p className="mt-3 text-sm text-foreground">
-          Shipstamp runs staged-only pre-commit reviews and returns stable, actionable Markdown your agent can apply before you push.
+          GitPreflight runs staged-only pre-commit reviews and returns stable, actionable Markdown your agent can apply before you push.
         </p>
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -60,7 +60,7 @@ export default async function Home() {
           <div className="border-b px-3 py-2 text-xs text-muted-foreground">Install</div>
           <pre className="overflow-x-auto px-3 py-2 text-xs leading-5">
             <code>
-              {`# npm\nnpm i -g shipstamp\nshipstamp --help\n\n# curl\ncurl -fsSL https://shipstamp.ai/install | bash\nshipstamp --help`}
+              {`# npm\nnpm i -g gitpreflight\ngitpreflight --help\n\n# curl\ncurl -fsSL https://gitpreflight.ai/install | bash\ngitpreflight --help`}
             </code>
           </pre>
         </div>
@@ -85,7 +85,7 @@ export default async function Home() {
       <section aria-label="Solution" className="pt-2">
         <h2 className="text-base font-semibold">Solution</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          PR bots comment on your PR. Shipstamp fixes your commit before it becomes a PR.
+          PR bots comment on your PR. GitPreflight fixes your commit before it becomes a PR.
         </p>
         <ul className="mt-4 list-disc space-y-2 pl-5 text-sm">
           <li>Run review at commit time, not in GitHub.</li>
@@ -101,7 +101,7 @@ export default async function Home() {
         <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm">
           <li>Stage changes.</li>
           <li>Run `git commit`.</li>
-          <li>Shipstamp reviews the staged diff and prints a stable Markdown report (PASS, minor, major).</li>
+          <li>GitPreflight reviews the staged diff and prints a stable Markdown report (PASS, minor, major).</li>
           <li>Your agent applies `suggestion` blocks, retries the commit, and iterates until PASS.</li>
         </ol>
       </section>
@@ -121,7 +121,7 @@ export default async function Home() {
 
       <section aria-label="Privacy" className="pt-2">
         <h2 className="text-base font-semibold">Privacy stance</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Short version: Shipstamp avoids storing customer repo source code at rest.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Short version: GitPreflight avoids storing customer repo source code at rest.</p>
         <ul className="mt-4 list-disc space-y-2 pl-5 text-sm">
           <li>The server stores instruction file contents (by hash) when configured (e.g. `AGENTS.md`).</li>
           <li>The server stores review outputs and aggregated usage/statistics.</li>
@@ -146,7 +146,7 @@ export default async function Home() {
             <div className="mt-3 rounded-md border bg-background px-3 py-2 text-sm">
               <div className="text-xs text-muted-foreground">5-file cap semantics</div>
               <div className="mt-2">
-                If a commit changes more than 5 files, Shipstamp reviews the first 5 files only (unique staged paths sorted
+                If a commit changes more than 5 files, GitPreflight reviews the first 5 files only (unique staged paths sorted
                 lexicographically). The commit is still allowed, and the report includes a note listing skipped paths plus an
                 upgrade CTA.
               </div>
@@ -181,37 +181,37 @@ export default async function Home() {
           <div>
             <h3 className="font-semibold">Do you store my repo code?</h3>
             <p className="mt-2 text-muted-foreground">
-              Shipstamp avoids storing customer repo source code at rest. The server stores instruction file contents (by hash)
+              GitPreflight avoids storing customer repo source code at rest. The server stores instruction file contents (by hash)
               when configured (e.g. `AGENTS.md`), plus review outputs and aggregated usage/statistics. It does not store arbitrary
               repo files.
             </p>
           </div>
 
           <div>
-            <h3 className="font-semibold">What happens if Shipstamp is offline or times out?</h3>
+            <h3 className="font-semibold">What happens if GitPreflight is offline or times out?</h3>
             <p className="mt-2 text-muted-foreground">
-              The commit is allowed. The commit is marked `UNCHECKED` locally under `.git/shipstamp/`. The next run on the same
+              The commit is allowed. The commit is marked `UNCHECKED` locally under `.git/gitpreflight/`. The next run on the same
               branch is blocked until the backlog is cleared or explicitly bypassed.
             </p>
           </div>
 
           <div>
-            <h3 className="font-semibold">How do I bypass Shipstamp?</h3>
+            <h3 className="font-semibold">How do I bypass GitPreflight?</h3>
             <ul className="mt-2 list-disc space-y-1.5 pl-5 text-muted-foreground">
-              <li>One-shot bypass: `shipstamp skip-next --reason &quot;&lt;why&gt;&quot;`</li>
+              <li>One-shot bypass: `gitpreflight skip-next --reason &quot;&lt;why&gt;&quot;`</li>
               <li>Universal bypass: `git commit --no-verify`</li>
             </ul>
           </div>
 
           <div>
             <h3 className="font-semibold">Is GitHub required?</h3>
-            <p className="mt-2 text-muted-foreground">For now, yes. Shipstamp sign-in uses GitHub.</p>
+            <p className="mt-2 text-muted-foreground">For now, yes. GitPreflight sign-in uses GitHub.</p>
           </div>
 
           <div>
             <h3 className="font-semibold">What does &quot;reviews up to 5 files&quot; mean on LLM Dabbler?</h3>
             <p className="mt-2 text-muted-foreground">
-              If a commit changes more than 5 files, Shipstamp reviews the first 5 files only (unique staged paths sorted
+              If a commit changes more than 5 files, GitPreflight reviews the first 5 files only (unique staged paths sorted
               lexicographically). The commit is still allowed, and the report includes a note listing skipped paths plus an
               upgrade CTA.
             </p>

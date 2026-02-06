@@ -10,10 +10,10 @@ export function InviteEmail(props: {
   return (
     <Html>
       <Head />
-      <Preview>You’ve been invited to join {orgName} on Shipstamp</Preview>
+      <Preview>You’ve been invited to join {orgName} on GitPreflight</Preview>
       <Body style={{ backgroundColor: "#ffffff", fontFamily: "ui-sans-serif, system-ui" }}>
         <Container style={{ margin: "0 auto", padding: "24px", maxWidth: "560px" }}>
-          <Heading style={{ fontSize: "22px", margin: "0 0 12px" }}>Join {orgName} on Shipstamp</Heading>
+          <Heading style={{ fontSize: "22px", margin: "0 0 12px" }}>Join {orgName} on GitPreflight</Heading>
           <Text style={{ fontSize: "14px", color: "#111827", lineHeight: "20px" }}>
             You’ve been invited to join <strong>{orgName}</strong>.
           </Text>

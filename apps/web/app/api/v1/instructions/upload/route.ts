@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
-import { api } from "@shipstamp/convex";
+import { api } from "@gitpreflight/convex";
 
 export const runtime = "nodejs";
 
