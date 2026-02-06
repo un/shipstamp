@@ -1,25 +1,14 @@
-import { chmodSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { chmodSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { ensureGitPreflightConfigDir, getGitPreflightConfigDir, migrateLegacyMacConfigIfNeeded } from "./configPaths";
 
 export type StoredToken = {
   token: string;
   createdAtMs: number;
 };
 
-function ensureDir(absDir: string) {
-  mkdirSync(absDir, { recursive: true });
-}
-
 function configDir(): string {
-  const xdg = process.env.XDG_CONFIG_HOME;
-  if (xdg && xdg.trim().length > 0) return join(xdg, "gitpreflight");
-
-  if (process.platform === "darwin") {
-    return join(homedir(), "Library", "Application Support", "gitpreflight");
-  }
-
-  return join(homedir(), ".config", "gitpreflight");
+  return getGitPreflightConfigDir();
 }
 
 function tokenPath(): string {
@@ -36,8 +25,7 @@ export function clearToken() {
 }
 
 export function saveToken(token: string) {
-  const dir = configDir();
-  ensureDir(dir);
+  ensureGitPreflightConfigDir();
   const abs = tokenPath();
   const data: StoredToken = { token, createdAtMs: Date.now() };
   writeFileSync(abs, JSON.stringify(data, null, 2) + "\n", "utf8");
@@ -49,6 +37,7 @@ export function saveToken(token: string) {
 }
 
 export function loadToken(): string {
+  migrateLegacyMacConfigIfNeeded();
   const abs = tokenPath();
   try {
     const raw = JSON.parse(readFileSync(abs, "utf8"));

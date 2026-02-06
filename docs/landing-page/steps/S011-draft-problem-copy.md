@@ -2,12 +2,12 @@
 
 ## Problem (bullets)
 
-- PR review happens after push, when the diff is already public and the context has shifted.
-- Agents and bots dump feedback into PR threads, not into the codebase.
-- The result is noise: long comment chains, repeated nits, and low-signal review for humans.
-- Fix loops get slower: push -> bot feedback -> agent patch -> more feedback -> repeat.
-- By the time a human reviews, they are reading the aftermath instead of the intent.
+- Push-first review leaks half-baked diffs into PRs before the loop is done.
+- Agents and bots write feedback into PR comments, not directly into your local fix loop.
+- Developers copy review output back into agents, then push another speculative patch.
+- PR threads become review archaeology: noise, retries, and repeated nits.
+- Humans review cleanup churn instead of the intended change.
 
 ## Short intro line (optional)
 
-If you have ever opened a PR and immediately regretted the comment thread you are about to create.
+You push code, bots pile onto the PR, and now your agent is stuck reading thread noise instead of fixing code.

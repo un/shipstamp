@@ -1,15 +1,12 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { InstallStatus } from "./scopedInstall";
+import { ensureGitPreflightConfigDir, getGitPreflightConfigDir, migrateLegacyMacConfigIfNeeded } from "./configPaths";
 
 const NOTICE_MARKER = "onboarding-notice-v1";
 
 function configDir(): string {
-  const xdg = process.env.XDG_CONFIG_HOME;
-  if (xdg && xdg.trim().length > 0) return join(xdg, "gitpreflight");
-  if (process.platform === "darwin") return join(homedir(), "Library", "Application Support", "gitpreflight");
-  return join(homedir(), ".config", "gitpreflight");
+  return getGitPreflightConfigDir();
 }
 
 function markerPath() {
@@ -17,12 +14,12 @@ function markerPath() {
 }
 
 export function hasShownOnboardingNotice(): boolean {
+  migrateLegacyMacConfigIfNeeded();
   return existsSync(markerPath());
 }
 
 export function markOnboardingNoticeShown() {
-  const dir = configDir();
-  mkdirSync(dir, { recursive: true });
+  ensureGitPreflightConfigDir();
   writeFileSync(markerPath(), `${Date.now()}\n`, "utf8");
 }
 
@@ -36,7 +33,7 @@ export function shouldShowOnboardingNotice(opts: {
   if (hasShownOnboardingNotice()) return false;
   if (opts.status.effectiveScope) return false;
 
-  const quietCommands = new Set([undefined, "--help", "-h", "--version", "-v", "install", "status", "internal"]);
+  const quietCommands = new Set([undefined, "--help", "-h", "--version", "-v", "install", "status", "setup", "auth", "internal"]);
   if (quietCommands.has(opts.cmd)) return false;
 
   return true;

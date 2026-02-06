@@ -35,11 +35,16 @@ export default async function Home() {
   return (
     <div className={cn("flex flex-col gap-10", styles.reveal)}>
       <section aria-label="Hero" className="pt-2">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">GitPreflight</h1>
-        <p className="mt-4 text-sm text-muted-foreground">Clean PRs by default. Fix issues at commit time.</p>
-        <p className="mt-3 text-sm text-foreground">
-          GitPreflight runs staged-only pre-commit reviews and returns stable, actionable Markdown your agent can apply before you push.
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Stop bad commits before they become PR noise.</h1>
+        <p className="mt-4 text-sm text-muted-foreground">
+          GitPreflight is the commit-time review gate for agentic teams. 1000x developers do not chase the white rabbit.
         </p>
+        <p className="mt-3 text-sm text-foreground">
+          Review runs on <code>git commit</code> (or optional pre-push), checks only <code>git diff --cached</code>, and returns stable
+          Markdown with <code>suggestion</code> blocks your agent can apply before you push.
+        </p>
+        <p className="mt-3 text-sm text-foreground">Tells your agent what to fix before the PR is made.</p>
+        <p className="mt-2 text-sm text-foreground">No more copying LLM feedback back and forth between the PR and your agent.</p>
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <Link
@@ -71,7 +76,7 @@ export default async function Home() {
       <section id="problem" className="scroll-mt-24">
         <h2 className="text-base font-semibold">Problem</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          If you have ever opened a PR and immediately regretted the comment thread you are about to create.
+          You push code, bots pile onto the PR, and now your agent is stuck reading thread noise instead of fixing code.
         </p>
         <ul className="mt-4 list-disc space-y-2 pl-5 text-sm">
           <li>PR review happens after push, when the diff is already public and the context has shifted.</li>
@@ -82,27 +87,54 @@ export default async function Home() {
         </ul>
       </section>
 
-      <section aria-label="Solution" className="pt-2">
+      <section id="before-after" className="scroll-mt-24 pt-2" aria-label="Before versus after">
+        <h2 className="text-base font-semibold">Before vs After</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Same agent. Different loop. One creates PR noise, the other ships clean intent.</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-lg border bg-card p-4">
+            <h3 className="text-sm font-semibold">Before: chase the white rabbit</h3>
+            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm">
+              <li>Push first, review later.</li>
+              <li>Feedback lands in PR comments after context is gone.</li>
+              <li>You copy review text into your agent and wait for another patch.</li>
+              <li>The PR becomes a debugging transcript.</li>
+            </ul>
+          </div>
+          <div className="rounded-lg border bg-card p-4">
+            <h3 className="text-sm font-semibold">After: closed loop before push</h3>
+            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm">
+              <li>Tells your agent what to fix before the PR is made.</li>
+              <li>No more copying LLM feedback back and forth between the PR and your agent.</li>
+              <li>Commit-time review returns stable Markdown with actionable <code>suggestion</code> blocks.</li>
+              <li>Your local loop runs PASS/FAIL/UNCHECKED, and you push only after PASS.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="solution" aria-label="Solution" className="pt-2 scroll-mt-24">
         <h2 className="text-base font-semibold">Solution</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          PR bots comment on your PR. GitPreflight fixes your commit before it becomes a PR.
+          PR bots review after push. GitPreflight blocks or clears the commit before the PR exists.
         </p>
         <ul className="mt-4 list-disc space-y-2 pl-5 text-sm">
-          <li>Run review at commit time, not in GitHub.</li>
+          <li>Run review in git hooks at commit time, with optional pre-push mode.</li>
           <li>Review the staged diff only (`git diff --cached`) so the scope stays small.</li>
           <li>Output a stable Markdown report with actionable `suggestion` blocks.</li>
-          <li>Close the loop locally: your agent iterates until PASS, then you push.</li>
+          <li>Use explicit loop semantics: FAIL blocks, UNCHECKED allows with local backlog, PASS is ready to push.</li>
+          <li>Close the loop locally: your agent iterates to PASS, then humans review intent instead of cleanup.</li>
         </ul>
       </section>
 
       <section id="how-it-works" className="scroll-mt-24">
         <h2 className="text-base font-semibold">How it works</h2>
-        <p className="mt-2 text-sm text-muted-foreground">A commit-time loop that ends at PASS.</p>
+        <p className="mt-2 text-sm text-muted-foreground">A commit-time protocol for agents that ends at PASS.</p>
         <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm">
           <li>Stage changes.</li>
           <li>Run `git commit`.</li>
-          <li>GitPreflight reviews the staged diff and prints a stable Markdown report (PASS, minor, major).</li>
-          <li>Your agent applies `suggestion` blocks, retries the commit, and iterates until PASS.</li>
+          <li>GitPreflight reviews the staged diff and prints stable Markdown with Result: PASS, FAIL, or UNCHECKED.</li>
+          <li>If FAIL, your agent applies `suggestion` blocks and retries. If UNCHECKED, commit is allowed but backlog must clear.</li>
+          <li>Repeat until PASS, then push a clean PR.</li>
         </ol>
       </section>
 
