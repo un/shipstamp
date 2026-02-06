@@ -16,6 +16,7 @@
   "scripts": {
     "build": "tsup src/index.ts --format cjs --dts --sourcemap --clean --define.__GITPREFLIGHT_OFFICIAL_BUILD__=false --define.__GITPREFLIGHT_CLI_VERSION__=$(node -p \"JSON.stringify(process.env.GITPREFLIGHT_VERSION || '0.0.0')\")",
     "build:official": "tsup src/index.ts --format cjs --dts --sourcemap --clean --define.__GITPREFLIGHT_OFFICIAL_BUILD__=true --define.__GITPREFLIGHT_CLI_VERSION__=$(node -p \"JSON.stringify(process.env.GITPREFLIGHT_VERSION || '0.0.0')\")",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "bun test"
   }
 }

@@ -16,6 +16,7 @@ const GitPreflightConfigSchema = z
     apiBaseUrl: z.never().optional(),
     instructionFiles: z.array(z.string().min(1)).optional(),
     timeoutMs: z.number().int().positive().optional(),
+    policy: z.enum(["required", "optional", "disabled"]).optional(),
     linters: z
       .object({
         enabled: z.boolean().optional(),

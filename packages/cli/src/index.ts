@@ -41,6 +41,18 @@ import { assertSourceBuild, GITPREFLIGHT_OFFICIAL_BUILD } from "./buildFlags";
 import { emitMarkdown, resolveGitPreflightUi } from "./ui";
 import { GITPREFLIGHT_CLI_VERSION } from "./version";
 import { collectPushReviewInputFromHook, parsePrePushStdin } from "./pushReview";
+import {
+  getInstallStatus,
+  installGlobalScope,
+  installLocalScope,
+  installRepoScope,
+  uninstallGlobalScope,
+  uninstallLocalScope,
+  type InstallScope
+} from "./scopedInstall";
+import { runInstallWizardTui } from "./installTui";
+import { markOnboardingNoticeShown, onboardingNoticeText, shouldShowOnboardingNotice } from "./onboarding";
+import { resolvePolicy } from "./policy";
 
 function printHelp() {
   process.stdout.write(
@@ -53,6 +65,9 @@ function printHelp() {
       "Commands:",
       "  review --staged        Review staged changes",
       "  review --push          Review commits being pushed",
+      "  install [options]      Install GitPreflight (global/local/repo)",
+      "  uninstall --scope ...  Remove GitPreflight for a scope",
+      "  status                 Show install status + effective scope",
       "  init [--hook ...]      Install git hooks + config (v0: stub)",
       "  auth login             Authenticate the CLI (v0: stub)",
       "  skip-next --reason ... Bypass next hook run (v0: stub)",
@@ -170,6 +185,40 @@ async function cmdReview(argv: string[]) {
     await emitMarkdown({ ui, markdown: md });
   };
 
+  const policyResolution = resolvePolicy(repoRoot);
+  const effectivePolicy = policyResolution.effective;
+
+  if (inHook && effectivePolicy.policy === "disabled") {
+    const md = formatReviewResultMarkdown({
+      status: "PASS",
+      findings: [
+        {
+          path: "package.json",
+          severity: "note",
+          title: "GitPreflight disabled by policy",
+          message: `Policy is disabled (source: ${effectivePolicy.source}). Skipping review.`
+        }
+      ]
+    });
+    await emit(md);
+    return 0;
+  }
+
+  const policyWarningFinding =
+    inHook &&
+    effectivePolicy.source === "repo" &&
+    effectivePolicy.policy === "required" &&
+    (policyResolution.ignored.local || policyResolution.ignored.global)
+      ? {
+          path: "package.json",
+          severity: "note" as const,
+          title: "Repo policy override active",
+          message:
+            "Repo policy is `required`, so local/global policy overrides are ignored for this repository. " +
+            "Update `package.json#gitpreflight.policy` if you want to change enforcement for the whole repo."
+        }
+      : null;
+
   const skip = readSkipNext(repoRoot);
   if (skip) {
     clearSkipNext(repoRoot);
@@ -249,7 +298,7 @@ async function cmdReview(argv: string[]) {
 
     const pm = detectPackageManager(repoRoot);
 
-    let findings: Array<import("@gitpreflight/core").Finding> = [];
+    let findings: Array<import("@gitpreflight/core").Finding> = policyWarningFinding ? [policyWarningFinding] : [];
 
     if (GITPREFLIGHT_OFFICIAL_BUILD && useLocalAgent) {
       findings.push({
@@ -704,6 +753,265 @@ async function cmdInit(argv: string[]) {
   return 0;
 }
 
+function parseHookFlag(hookFlag: string | undefined): InitHookMode | null {
+  if (!hookFlag) return null;
+  if (hookFlag === "pre-commit" || hookFlag === "pre-push" || hookFlag === "both") return hookFlag;
+  return null;
+}
+
+function parseScopeFlag(scopeFlag: string | undefined): InstallScope | null {
+  if (!scopeFlag) return null;
+  if (scopeFlag === "global" || scopeFlag === "local" || scopeFlag === "repo") return scopeFlag;
+  return null;
+}
+
+async function promptInstallFallback(): Promise<{ scope: InstallScope; hook: InitHookMode }> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const question = (q: string) => new Promise<string>((resolve) => rl.question(q, resolve));
+
+  try {
+    process.stdout.write(
+      [
+        "GitPreflight setup",
+        "Choose scope:",
+        "  1) global  - all repos on this machine",
+        "  2) local   - this repo only (no committed files)",
+        "  3) repo    - committed team setup",
+        ""
+      ].join("\n")
+    );
+
+    let scope: InstallScope = "local";
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const answer = (await question("Select scope 1-3 [2]: ")).trim();
+      if (answer === "" || answer === "2") {
+        scope = "local";
+        break;
+      }
+      if (answer === "1") {
+        scope = "global";
+        break;
+      }
+      if (answer === "3") {
+        scope = "repo";
+        break;
+      }
+      process.stdout.write("Invalid selection.\n");
+    }
+
+    process.stdout.write("\n");
+    process.stdout.write(
+      [
+        "Choose hook mode:",
+        "  1) pre-commit",
+        "  2) pre-push",
+        "  3) both",
+        ""
+      ].join("\n")
+    );
+
+    let hook: InitHookMode = "pre-commit";
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const answer = (await question("Select hook mode 1-3 [1]: ")).trim();
+      if (answer === "" || answer === "1") {
+        hook = "pre-commit";
+        break;
+      }
+      if (answer === "2") {
+        hook = "pre-push";
+        break;
+      }
+      if (answer === "3") {
+        hook = "both";
+        break;
+      }
+      process.stdout.write("Invalid selection.\n");
+    }
+
+    return { scope, hook };
+  } finally {
+    rl.close();
+  }
+}
+
+async function cmdInstall(argv: string[]) {
+  const parsed = parseArgs({
+    args: argv,
+    options: {
+      scope: { type: "string" },
+      hook: { type: "string" },
+      yes: { type: "boolean" },
+      help: { type: "boolean", short: "h" }
+    },
+    allowPositionals: false
+  });
+
+  if (parsed.values.help) {
+    process.stdout.write("Usage: gitpreflight install [--scope global|local|repo] [--hook pre-commit|pre-push|both] [--yes]\n");
+    return 0;
+  }
+
+  const scopeFlag = parseScopeFlag(parsed.values.scope as string | undefined);
+  const hookFlag = parseHookFlag(parsed.values.hook as string | undefined);
+  const autoYes = Boolean(parsed.values.yes);
+
+  if ((parsed.values.scope as string | undefined) && !scopeFlag) {
+    process.stderr.write(`Invalid --scope value: ${parsed.values.scope}. Expected global, local, or repo.\n`);
+    return 2;
+  }
+
+  if ((parsed.values.hook as string | undefined) && !hookFlag) {
+    process.stderr.write(`Invalid --hook value: ${parsed.values.hook}. Expected pre-commit, pre-push, or both.\n`);
+    return 2;
+  }
+
+  let scope = scopeFlag;
+  let hook: InitHookMode = hookFlag ?? "pre-commit";
+
+  if (!scope) {
+    if (autoYes) {
+      scope = "local";
+    } else if (process.stdin.isTTY && process.stdout.isTTY) {
+      const isBunRuntime = typeof (globalThis as any).Bun !== "undefined";
+      if (isBunRuntime) {
+        try {
+          const choice = await runInstallWizardTui();
+          scope = choice.scope;
+          hook = choice.hook;
+        } catch {
+          process.stderr.write("Install canceled.\n");
+          return 1;
+        }
+      } else {
+        const choice = await promptInstallFallback();
+        scope = choice.scope;
+        hook = choice.hook;
+      }
+    } else {
+      process.stderr.write("Non-interactive install requires --scope (global|local|repo).\n");
+      return 2;
+    }
+  }
+
+  try {
+    if (scope === "global") {
+      installGlobalScope({ hook });
+      process.stdout.write(`Installed GitPreflight globally (${hook}).\n`);
+    } else if (scope === "local") {
+      const repoRoot = getRepoRoot();
+      installLocalScope(repoRoot, { hook });
+      process.stdout.write(`Installed GitPreflight locally for this repo (${hook}).\n`);
+    } else {
+      const repoRoot = getRepoRoot();
+      installRepoScope(repoRoot, { hook });
+      process.stdout.write("Installed GitPreflight in repo mode (Husky + package.json updates).\n");
+      process.stdout.write("Next: run your package manager install so the prepare script can run `husky install`.\n");
+    }
+  } catch (err) {
+    process.stderr.write(`Install failed: ${(err as Error).message}\n`);
+    return 2;
+  }
+
+  markOnboardingNoticeShown();
+  return 0;
+}
+
+async function cmdUninstall(argv: string[]) {
+  const parsed = parseArgs({
+    args: argv,
+    options: {
+      scope: { type: "string" },
+      help: { type: "boolean", short: "h" }
+    },
+    allowPositionals: false
+  });
+
+  if (parsed.values.help) {
+    process.stdout.write("Usage: gitpreflight uninstall --scope global|local\n");
+    return 0;
+  }
+
+  const scope = parseScopeFlag(parsed.values.scope as string | undefined);
+  if (!scope || scope === "repo") {
+    process.stderr.write("Uninstall supports --scope global|local. For repo mode, remove Husky hooks and package.json entries manually.\n");
+    return 2;
+  }
+
+  try {
+    if (scope === "global") {
+      uninstallGlobalScope();
+      process.stdout.write("Removed global GitPreflight install (if present).\n");
+    } else {
+      const repoRoot = getRepoRoot();
+      uninstallLocalScope(repoRoot);
+      process.stdout.write("Removed local GitPreflight install for this repo (if present).\n");
+    }
+  } catch (err) {
+    process.stderr.write(`Uninstall failed: ${(err as Error).message}\n`);
+    return 2;
+  }
+
+  return 0;
+}
+
+async function cmdStatus(argv: string[]) {
+  const parsed = parseArgs({
+    args: argv,
+    options: {
+      verbose: { type: "boolean" },
+      help: { type: "boolean", short: "h" }
+    },
+    allowPositionals: false
+  });
+
+  if (parsed.values.help) {
+    process.stdout.write("Usage: gitpreflight status [--verbose]\n");
+    return 0;
+  }
+
+  let repoRoot: string | null = null;
+  try {
+    repoRoot = getRepoRoot();
+  } catch {
+    repoRoot = null;
+  }
+
+  const status = getInstallStatus(repoRoot);
+  const policy = resolvePolicy(repoRoot);
+
+  process.stdout.write(`Global install: ${status.global.installed ? "enabled" : "disabled"}\n`);
+  if (parsed.values.verbose) {
+    process.stdout.write(`  global hooksPath: ${status.global.hooksPath ?? "(unset)"}\n`);
+    process.stdout.write(`  managed hooksPath: ${status.global.managedHooksPath}\n`);
+  }
+
+  if (repoRoot) {
+    process.stdout.write(`Local install (this repo): ${status.local.installed ? "enabled" : "disabled"}\n`);
+    process.stdout.write(`Repo install (committed): ${status.repo.installed ? "enabled" : "disabled"}\n`);
+    if (parsed.values.verbose) {
+      process.stdout.write(`  local hooksPath: ${status.local.hooksPath ?? "(unset)"}\n`);
+      process.stdout.write(`  managed local hooksPath: ${status.local.managedHooksPath ?? "(n/a)"}\n`);
+    }
+  } else {
+    process.stdout.write("Local/repo install: unknown (not inside a git repository)\n");
+  }
+
+  process.stdout.write(`Effective scope: ${status.effectiveScope ?? "none"}\n`);
+  process.stdout.write(`Effective policy: ${policy.effective.policy} (source: ${policy.effective.source})\n`);
+  if (parsed.values.verbose) {
+    process.stdout.write(`  configured repo policy: ${policy.configured.repo ?? "(unset)"}\n`);
+    process.stdout.write(`  configured local policy: ${policy.configured.local ?? "(unset)"}\n`);
+    process.stdout.write(`  configured global policy: ${policy.configured.global ?? "(unset)"}\n`);
+    if (policy.ignored.local || policy.ignored.global) {
+      const ignored: string[] = [];
+      if (policy.ignored.local) ignored.push("local");
+      if (policy.ignored.global) ignored.push("global");
+      process.stdout.write(`  ignored overrides: ${ignored.join(", ")}\n`);
+    }
+  }
+  return status.effectiveScope ? 0 : 1;
+}
+
 async function cmdAuth(argv: string[]) {
   const sub = argv[0];
   if (sub === "login") {
@@ -794,6 +1102,30 @@ async function cmdSkipNext(argv: string[]) {
 export async function runCli(argv: string[] = process.argv.slice(2)) {
   const [cmd, ...rest] = argv;
 
+  const env = process.env;
+  const inCi = env.CI === "1" || env.CI === "true" || env.GITHUB_ACTIONS === "1" || env.GITHUB_ACTIONS === "true";
+  const inHook = env.GITPREFLIGHT_HOOK === "1" || Boolean(env.GIT_DIR);
+
+  let repoRootForStatus: string | null = null;
+  try {
+    repoRootForStatus = getRepoRoot();
+  } catch {
+    repoRootForStatus = null;
+  }
+
+  const installStatus = getInstallStatus(repoRootForStatus);
+  if (
+    shouldShowOnboardingNotice({
+      cmd,
+      inCi,
+      inHook,
+      status: installStatus
+    })
+  ) {
+    process.stderr.write(`${onboardingNoticeText()}\n`);
+    markOnboardingNoticeShown();
+  }
+
   if (!cmd || cmd === "--help" || cmd === "-h") {
     printHelp();
     return 0;
@@ -805,6 +1137,9 @@ export async function runCli(argv: string[] = process.argv.slice(2)) {
   }
 
   if (cmd === "review") return await cmdReview(rest);
+  if (cmd === "install") return await cmdInstall(rest);
+  if (cmd === "uninstall") return await cmdUninstall(rest);
+  if (cmd === "status") return await cmdStatus(rest);
   if (cmd === "init") return await cmdInit(rest);
   if (cmd === "auth") return await cmdAuth(rest);
   if (cmd === "skip-next") return await cmdSkipNext(rest);

@@ -67,11 +67,20 @@ gitpreflight auth login
 In a repo you want to protect:
 
 ```bash
-gitpreflight init
-# or: gitpreflight init --hook pre-push
+gitpreflight install
+# or non-interactive:
+# gitpreflight install --scope local --hook pre-commit --yes
+# gitpreflight install --scope global --hook pre-commit --yes
+# gitpreflight install --scope repo --hook pre-commit --yes
 ```
 
-`gitpreflight init` is interactive in a TTY and will ask whether you want to run on commit or push.
+`gitpreflight install` is interactive in a TTY and explains scope options:
+
+- `global`: enable across all repos on your machine
+- `local`: enable for this repo only, without committed integration files
+- `repo`: committed repo-owned setup for all contributors
+
+Compatibility: `gitpreflight init` still works for repo-scoped Husky setup.
 
 GitPreflight integrates via Husky:
 
@@ -81,10 +90,41 @@ GitPreflight integrates via Husky:
 
 Optional push-gate mode:
 
-- `gitpreflight init --hook pre-push` creates/appends `.husky/pre-push` to run `gitpreflight review --push`
-- `gitpreflight init --hook both` installs both commit + push hooks
+- `gitpreflight install --scope repo --hook pre-push --yes` creates/appends `.husky/pre-push` to run `gitpreflight review --push`
+- `gitpreflight install --scope repo --hook both --yes` installs both commit + push hooks
 
-After `gitpreflight init`, run your package manager install so Husky activates:
+Inspect or remove setup:
+
+```bash
+gitpreflight status --verbose
+gitpreflight uninstall --scope local
+# or
+gitpreflight uninstall --scope global
+```
+
+Policy overrides (optional):
+
+```bash
+# global default policy
+git config --global gitpreflight.policy optional
+
+# local repo override (for example, opt out in one repo)
+git config --local gitpreflight.policy disabled
+```
+
+Repo owners can commit policy in `package.json`:
+
+```json
+{
+  "gitpreflight": {
+    "policy": "required"
+  }
+}
+```
+
+Policy precedence is: repo policy > local git config > global git config > default (`optional`).
+
+After repo-scoped install (`gitpreflight install --scope repo ...` or `gitpreflight init`), run your package manager install so Husky activates:
 
 ```bash
 npm install
@@ -130,6 +170,13 @@ git commit --no-verify
 # or (if using pre-push mode):
 git push --no-verify
 ```
+
+## Enforcement note
+
+Repo-scoped hooks are a strong local default, but true "required" enforcement needs protected branch checks in your git host.
+
+- Recommended: require a GitPreflight CI status check for merges to protected branches.
+- Client hooks alone are bypassable via `--no-verify`.
 
 ## Privacy stance
 
