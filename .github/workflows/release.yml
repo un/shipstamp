@@ -91,8 +91,7 @@ jobs:
       - name: Set package version
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          cd packages/gitpreflight
-          npm version "$VERSION" --no-git-tag-version
+          VERSION="$VERSION" node -e "const fs=require('node:fs'); const p='packages/gitpreflight/package.json'; const j=JSON.parse(fs.readFileSync(p,'utf8')); j.version=process.env.VERSION; fs.writeFileSync(p, JSON.stringify(j, null, 2) + '\n');"
 
       - name: Publish
         run: |
