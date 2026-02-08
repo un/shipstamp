@@ -79,6 +79,7 @@ jobs:
     needs: [github-release]
     permissions:
       contents: read
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -96,6 +97,4 @@ jobs:
       - name: Publish
         run: |
           cd packages/gitpreflight
-          npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          npm publish --access public --provenance
