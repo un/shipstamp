@@ -86,7 +86,13 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Ensure npm version supports trusted publishing
+        run: |
+          npm i -g npm@^11.5.1
+          npm --version
 
       - name: Clear npm token-based auth for trusted publishing
         run: |
