@@ -19,7 +19,7 @@ jobs:
           - target: darwin-arm64
             runs-on: macos-14
           - target: darwin-x64
-            runs-on: macos-13
+            runs-on: macos-14
           - target: linux-x64
             runs-on: ubuntu-latest
           - target: linux-arm64
